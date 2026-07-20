@@ -2,7 +2,7 @@
 
 > Un RPG pixel-art narrativo ambientato a Tricase, tra il 2015 e il 2019.
 
-**🎮 [Gioca online](https://marraguglielmo.github.io/18-anni-rimandati/)**
+**🎮 [Gioca online](https://marraguglielmo.github.io/18_anni_rimandati/)**
 
 ---
 
@@ -162,7 +162,7 @@ Il workflow:
 2. Compila TypeScript e builda con Vite (`npm run build`)
 3. Carica la cartella `dist/` su GitHub Pages
 
-URL live: **https://marraguglielmo.github.io/18-anni-rimandati/**
+URL live: **https://marraguglielmo.github.io/18_anni_rimandati/**
 
 ---
 

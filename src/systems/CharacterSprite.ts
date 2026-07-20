@@ -625,13 +625,10 @@ function drawOverworldHead(
   // (i capelli veri sono già nella foto). Leggermente più in basso,
   // sovrapposta al colletto: non "appoggiata" sul collo.
   if (faceImg && faceImg.width > 0) {
-    // Testa grande quasi quanto il frame (chibi Gen 1: ~60% dell'altezza)
-    if (dir === 'up') {
-      // di spalle: sagoma della testa completamente scura
-      drawPhotoFace(ctx, faceImg, 'down', 1, y, 22, 19, 5, cfg, 1);
-      return;
-    }
-    drawPhotoFace(ctx, faceImg, dir, 1, y, 22, 19, 5, cfg);
+    // Testa grande quasi quanto il frame (chibi Gen 1: ~60% dell'altezza).
+    // Il volto resta SEMPRE frontale, anche camminando verso l'alto
+    // (niente retro-testa: scelta di stile).
+    drawPhotoFace(ctx, faceImg, dir === 'up' ? 'down' : dir, 1, y, 22, 19, 5, cfg);
     return;
   }
 
@@ -661,23 +658,8 @@ function drawOverworldHead(
     ctx.fillRect(5, y + 1, 14, 2);
   }
 
-  if (dir === 'up') {
-    if (cfg.bald) {
-      roundRect(ctx, 3, y, 18, 13, 5);
-      ctx.fillStyle = skin;
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-      ctx.fillRect(7, y + 2, 5, 2);
-    } else {
-      ctx.fillStyle = hair;
-      roundRect(ctx, 3, y, 18, cfg.shortHair ? 14 : 16, 5);
-      ctx.fill();
-      ctx.fillStyle = hairDark;
-      ctx.fillRect(11, y + 2, 2, 12);
-    }
-    return;
-  }
-
+  // Il volto resta SEMPRE frontale, anche camminando verso l'alto
+  // (niente retro-testa: scelta di stile).
   roundRect(ctx, 5, y + 3, 14, 11, 2);
   ctx.fillStyle = skin;
   ctx.fill();

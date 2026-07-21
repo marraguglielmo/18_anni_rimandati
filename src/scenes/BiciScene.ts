@@ -261,7 +261,7 @@ export class BiciScene extends Phaser.Scene {
     for (const p of PEOPLE) generateSpriteTexture(this, p.id, CHAR_CONFIGS[p.id]);
 
     this.dialogue = new DialogueSystem(this);
-    this.questHUD = new QuestHUD(this, GAME_WIDTH / 2 + UI_OFF_X, 30 + UI_OFF_Y);
+    this.questHUD = new QuestHUD(this, GAME_WIDTH / 2 + UI_OFF_X, 40 + UI_OFF_Y);
     TransitionSystem.announceArea(this, 'TRICASE, PERIFERIA – LUGLIO 2019');
 
     // salto: Spazio / W / Su / tap
@@ -438,9 +438,16 @@ export class BiciScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(950);
     this.updateMgUi();
-    // Mostra il QuestHUD dopo che lo zoom è completato (650ms),
-    // così la box appare già alla dimensione finale senza ingrandirsi durante il tween
-    this.time.delayedCall(650, () => this.questHUD.show(`Raccogli ${COINS_TO_WIN} monete`));
+    // Mostra il QuestHUD dopo che lo zoom è completato (650ms).
+    // La camera resta a RENDER_SCALE·1.15: compensiamo così il box non si
+    // ingrandisce né si sposta rispetto alle altre scene.
+    this.time.delayedCall(650, () => {
+      this.questHUD.compensateCameraZoom(
+        RENDER_SCALE * 1.15, RENDER_SCALE,
+        (GAME_WIDTH * RENDER_SCALE) / 2, (GAME_HEIGHT * RENDER_SCALE) / 2,
+      );
+      this.questHUD.show(`Raccogli ${COINS_TO_WIN} monete`);
+    });
     this.popText('SPAZIO o TAP per saltare', 1800);
 
     // Pensieri casuali di Trande ogni ~3s

@@ -22,8 +22,9 @@ export class QuestHUD {
   private readonly container: Phaser.GameObjects.Container;
   private readonly body: Phaser.GameObjects.Text;
   private readonly brackets: Phaser.GameObjects.Graphics;
-  private readonly by: number;
+  private by: number;
   private pulseTween: Phaser.Tweens.Tween | null = null;
+  private autoHideTimer: Phaser.Time.TimerEvent | null = null;
   private marker: Phaser.GameObjects.Text | null = null;
   private markerTween: Phaser.Tweens.Tween | null = null;
 
@@ -82,6 +83,29 @@ export class QuestHUD {
     return this.container;
   }
 
+  /**
+   * Compensa uno zoom della camera diverso dallo zoom base del gioco
+   * (RENDER_SCALE), così il box resta della STESSA dimensione e posizione a
+   * schermo anche quando la camera zooma (es. il minigioco della bici).
+   *
+   * Con scrollFactor 0: screen = zoom·pos − mid·(zoom−1). Riproiettiamo
+   * l'ancora e scaliamo il container di baseZoom/cameraZoom per annullare
+   * l'ingrandimento dovuto allo zoom.
+   *
+   * @param midX metà larghezza del canvas (GAME_WIDTH·RENDER_SCALE / 2)
+   * @param midY metà altezza del canvas (GAME_HEIGHT·RENDER_SCALE / 2)
+   */
+  compensateCameraZoom(cameraZoom: number, baseZoom: number, midX: number, midY: number): void {
+    const bx = this.container.x;
+    this.container
+      .setScale(baseZoom / cameraZoom)
+      .setPosition(
+        (baseZoom * bx + midX * (cameraZoom - baseZoom)) / cameraZoom,
+        (baseZoom * this.by + midY * (cameraZoom - baseZoom)) / cameraZoom,
+      );
+    this.by = this.container.y;   // show()/clear() usano la nuova ancora
+  }
+
   /** Aggiunge il marcatore ▼ world-space (solo per scene RPG con NPC). */
   addMarker(): this {
     this.marker = this.scene.add
@@ -95,9 +119,13 @@ export class QuestHUD {
     return this;
   }
 
+  /** Il box si nasconde da solo dopo questo tempo (ms). */
+  private static readonly AUTO_HIDE_MS = 7000;
+
   show(text: string): void {
     this.body.setText(text);
     if (this.pulseTween) { this.pulseTween.stop(); this.pulseTween = null; }
+    if (this.autoHideTimer) { this.autoHideTimer.remove(); this.autoHideTimer = null; }
     this.brackets.setAlpha(1);
     this.container.setAlpha(0).setY(this.by - 14);
     this.scene.tweens.add({
@@ -118,10 +146,13 @@ export class QuestHUD {
         });
       },
     });
+    // Sparisce da solo dopo qualche secondo (resta comunque il marcatore ▼)
+    this.autoHideTimer = this.scene.time.delayedCall(QuestHUD.AUTO_HIDE_MS, () => this.clear());
   }
 
   clear(delayMs = 0): void {
     if (this.pulseTween) { this.pulseTween.stop(); this.pulseTween = null; }
+    if (this.autoHideTimer) { this.autoHideTimer.remove(); this.autoHideTimer = null; }
     this.brackets.setAlpha(1);
     this.scene.time.delayedCall(delayMs, () => {
       this.scene.tweens.add({

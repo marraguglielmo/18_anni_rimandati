@@ -323,7 +323,7 @@ export class AulaScene extends Phaser.Scene {
 
     this.trande = this.spawnNamed('trande', 440, 290, 'left');
     this.interactables.push({ id: 'trande', sprite: this.trande });
-    this.questHUD = new QuestHUD(this, WORLD_W / 2 + UI_OFF_X, 15 + UI_OFF_Y).addMarker();
+    this.questHUD = new QuestHUD(this, WORLD_W / 2 + UI_OFF_X, 50 + UI_OFF_Y).addMarker();
 
     this.dialogue = new DialogueSystem(this);
     this.player = new PlayerController(this, 'bubi', 240, 290, this.dialogue);
@@ -540,20 +540,45 @@ export class AulaScene extends Phaser.Scene {
       );
     }
 
-    // ── Battuta di Umberto (auto-display) ─────────────────────────────────
+    // ── Battuta di Umberto: nuvoletta (fumetto) sopra la sua testa ────────
     await new Promise<void>(r => this.time.delayedCall(350, r));
 
-    const bubble = el(this.add.text(
-      OX + 240, OY + CHAR_Y - 14,
-      '"Vabe... dai pe sta fiata."',
-      { fontFamily: FONT, fontSize: '5px', color: '#ffaa44', stroke: '#000000', strokeThickness: 3 },
-    ).setOrigin(0.5, 1).setScrollFactor(0).setDepth(DEPTH + 20).setAlpha(0));
+    const ux   = OX + 240;              // Umberto è al centro (x=240)
+    const tipY = OY + CHAR_Y - 18;      // punta della codina, appena sopra la testa
+
+    const say = el(
+      this.add.text(ux, 0, 'Vabe... dai\npe sta fiata.', {
+        fontFamily: FONT, fontSize: '5px', color: '#20140a', align: 'center',
+      })
+        .setLineSpacing(2)
+        .setOrigin(0.5, 0.5)
+        .setScrollFactor(0)
+        .setDepth(DEPTH + 22)
+        .setAlpha(0),
+    );
+
+    const PAD = 5;
+    const bw = Math.ceil(say.width)  + PAD * 2;
+    const bh = Math.ceil(say.height) + PAD * 2;
+    const bx = ux - bw / 2;
+    const by = tipY - 7 - bh;           // la nuvola sta sopra la codina
+    say.setY(by + bh / 2);
+
+    const balloon = el(this.add.graphics().setScrollFactor(0).setDepth(DEPTH + 21).setAlpha(0));
+    // Contorno scuro (1px più grande) → stacca il fumetto dallo sfondo chiaro
+    balloon.fillStyle(0x20140a, 1);
+    balloon.fillRoundedRect(bx - 1, by - 1, bw + 2, bh + 2, 5);
+    balloon.fillTriangle(ux - 6, by + bh - 1, ux + 6, by + bh - 1, ux, tipY + 1);
+    // Corpo bianco + codina
+    balloon.fillStyle(0xffffff, 1);
+    balloon.fillRoundedRect(bx, by, bw, bh, 4);
+    balloon.fillTriangle(ux - 5, by + bh - 1, ux + 5, by + bh, ux, tipY);
 
     await new Promise<void>(r =>
-      this.tweens.add({ targets: bubble, alpha: 1, duration: 300, onComplete: () => r() })
+      this.tweens.add({ targets: [balloon, say], alpha: 1, duration: 260, ease: 'Quad.easeOut', onComplete: () => r() })
     );
     await new Promise<void>(r => this.time.delayedCall(1700, r));
-    this.tweens.add({ targets: bubble, alpha: 0, duration: 300 });
+    this.tweens.add({ targets: [balloon, say], alpha: 0, duration: 300 });
 
     // ── Entrata nella scuola uno alla volta ───────────────────────────────
     for (let i = 0; i < extSprites.length; i++) {

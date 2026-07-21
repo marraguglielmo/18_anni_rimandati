@@ -456,7 +456,7 @@ export class PartyScene extends Phaser.Scene {
 
     TransitionSystem.fadeFromBlack(this, 800);
     // BGM globale già in corso
-    this.questHUD = new QuestHUD(this, GAME_WIDTH / 2 + UI_OFF_X, 15 + UI_OFF_Y).addMarker();
+    this.questHUD = new QuestHUD(this, GAME_WIDTH / 2 + UI_OFF_X, 50 + UI_OFF_Y).addMarker();
 
     const initData = this.scene.settings.data as { pongDone?: boolean; skipToDance?: boolean; skipToEnd?: boolean } | undefined;
     const pongDone    = !!initData?.pongDone;

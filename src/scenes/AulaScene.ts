@@ -425,45 +425,107 @@ export class AulaScene extends Phaser.Scene {
     // ── Sfondo: cielo + facciata scuola + marciapiede ───────────────────
     const bg = el(this.add.graphics({ x: OX, y: OY }).setScrollFactor(0).setDepth(DEPTH));
 
-    // Cielo
-    bg.fillGradientStyle(0x5599cc, 0x5599cc, 0x88c4f0, 0x88c4f0, 1);
-    bg.fillRect(0, 0, W, 55);
-
-    // Corpo edificio
     const BX = 30, BY = 18, BW = 420, BH = 170;
-    bg.fillStyle(0xd8c898);
-    bg.fillRect(BX, BY, BW, BH);
+    const GND = BY + BH;                 // = 188, quota pavimentazione
+    const WHITE = 0xf6f6f2, LIT = 0xffffff, SHAD = 0xd7d9d4;
+    const STONE = 0xe4d5b6, STONE2 = 0xcfbc95, GLASS = 0x6fa2c2, GLASS2 = 0xa9cfe4;
 
-    // Fascia superiore scura
-    bg.fillStyle(0xbba872);
-    bg.fillRect(BX, BY, BW, 5);
+    // ── Cielo azzurro intenso ────────────────────────────────────────────
+    bg.fillStyle(0x1f7ad0, 1); bg.fillRect(0, 0, W, H);
+    bg.fillStyle(0x3f93de, 1); bg.fillRect(0, 46, W, 20);
 
-    // Lesene verticali decorative
-    bg.fillStyle(0xccba80);
-    for (let lx = BX + 28; lx < BX + BW; lx += 68) {
-      bg.fillRect(lx, BY + 5, 6, BH - 5);
+    // ── Muro superiore bianco (dietro attico e tettoia) ──────────────────
+    bg.fillStyle(WHITE); bg.fillRect(BX, 28, BW, 52);
+    bg.fillStyle(LIT);   bg.fillRect(BX, 28, BW, 3);
+
+    // ── Attico rialzato centrale con vetrata e pilastrini in pietra ──────
+    const AX = 150, AW = 180, ATY = 4, ATH = 44;
+    bg.fillStyle(WHITE); bg.fillRect(AX, ATY, AW, ATH);
+    bg.fillStyle(LIT);   bg.fillRect(AX, ATY, AW, 3);
+    bg.fillStyle(SHAD);  bg.fillRect(AX, ATY + ATH - 2, AW, 2);
+    const gwy = ATY + 16, gwh = 20;
+    bg.fillStyle(0x2c4a5c); bg.fillRect(AX + 12, gwy, AW - 24, gwh);
+    bg.fillStyle(0x49708a);
+    for (let gx = AX + 15; gx < AX + AW - 14; gx += 18) bg.fillRect(gx, gwy + 1, 8, gwh - 2);
+    bg.fillStyle(STONE);
+    for (let px = AX + 28; px < AX + AW - 12; px += 30) bg.fillRect(px, gwy - 2, 5, gwh + 4);
+
+    // ── Aste e bandiere (tricolore + UE, a destra dell'insegna) ──────────
+    bg.lineStyle(2, 0x4a4a4a);
+    bg.lineBetween(300, 78, 332, 38);
+    bg.lineBetween(300, 78, 348, 48);
+    bg.fillStyle(0x2a9d3f); bg.fillRect(322, 38, 6, 13);      // tricolore
+    bg.fillStyle(0xffffff); bg.fillRect(328, 38, 6, 13);
+    bg.fillStyle(0xd12030); bg.fillRect(334, 38, 6, 13);
+    bg.fillStyle(0x1b3f8f); bg.fillRect(338, 48, 17, 12);     // bandiera UE
+    bg.fillStyle(0xffd21e);
+    for (let s = 0; s < 8; s++) {
+      const a = (s / 8) * Math.PI * 2;
+      bg.fillRect(346 + Math.round(Math.cos(a) * 5) - 1, 54 + Math.round(Math.sin(a) * 4) - 1, 1, 1);
     }
 
-    // Finestre: 2 righe × 4 colonne (evitano l'area centrale della porta)
-    const WIN_W = 22, WIN_H = 26;
-    const WIN_XS = [BX + 38, BX + 106, BX + 286, BX + 354];
-    const WIN_YS = [BY + 20, BY + 75];
-    for (const wy of WIN_YS) {
-      for (const wx of WIN_XS) {
-        bg.fillStyle(0x5588aa);
-        bg.fillRect(wx, wy, WIN_W, WIN_H);
-        bg.fillStyle(0x7aaabb);
-        bg.fillRect(wx + 1, wy + 1, WIN_W / 2 - 1, WIN_H - 2);
-        bg.fillStyle(0xaad4e8);
-        bg.fillRect(wx, wy, WIN_W, 2);
-      }
-    }
+    // ── Tettoia orizzontale bianca (aggetto) + ombra sul portico ─────────
+    bg.fillStyle(LIT);  bg.fillRect(18, 60, W - 36, 18);
+    bg.fillStyle(SHAD); bg.fillRect(18, 76, W - 36, 3);
 
-    // Marciapiede
-    bg.fillStyle(0x888888);
-    bg.fillRect(0, BY + BH, W, H - (BY + BH));
-    bg.fillStyle(0xbbbbbb);
-    bg.fillRect(0, BY + BH, W, 3);
+    // ── Parete di fondo del portico (bianca, leggermente in ombra) ───────
+    bg.fillStyle(0xe9eae6); bg.fillRect(BX, 79, BW, GND - 79);
+    bg.fillStyle(0x2a3a46, 0.15); bg.fillRect(BX, 79, BW, 11);
+
+    // ── Piloni esterni rivestiti in pietra + murales laterali ────────────
+    const stonePier = (x: number, w: number): void => {
+      bg.fillStyle(STONE); bg.fillRect(x, 79, w, GND - 79);
+      bg.fillStyle(STONE2);
+      for (let sy = 82; sy < GND; sy += 10)
+        for (let sx = x + 2 + ((sy / 10 | 0) % 2) * 8; sx < x + w - 2; sx += 16)
+          bg.fillRect(sx, sy, 13, 8);
+    };
+    stonePier(BX, 44);
+    stonePier(BX + BW - 44, 44);
+    // murale sinistro (colori vivaci) / destro (rossi scuri)
+    bg.fillStyle(0x2b6fb0); bg.fillRect(BX + 6, 122, 34, 58);
+    bg.fillStyle(0xe23b3b); bg.fillRect(BX + 10, 130, 10, 14);
+    bg.fillStyle(0x39b54a); bg.fillRect(BX + 22, 140, 12, 22);
+    bg.fillStyle(0xf5c518); bg.fillRect(BX + 10, 156, 14, 12);
+    bg.fillStyle(0x7a1f1f); bg.fillRect(BX + BW - 40, 122, 34, 58);
+    bg.fillStyle(0xb03a2e); bg.fillRect(BX + BW - 34, 130, 22, 22);
+    bg.fillStyle(0x2c2c3a); bg.fillRect(BX + BW - 36, 156, 26, 22);
+
+    // ── Vetrate del portico (tra le colonne) ─────────────────────────────
+    const glass = (x1: number, x2: number): void => {
+      bg.fillStyle(GLASS);  bg.fillRect(x1, 104, x2 - x1, GND - 104);
+      bg.fillStyle(GLASS2); bg.fillRect(x1, 104, x2 - x1, 3);
+      bg.fillStyle(0xbfe0f0, 0.5); bg.fillRect(x1 + 4, 108, 3, GND - 114);
+    };
+    glass(112, 150); glass(166, 204); glass(276, 330); glass(346, 382);
+    glass(202, 278);   // sopravporta (transom): coperto dai pannelli sotto y136
+
+    // ── Colonne bianche del portico ──────────────────────────────────────
+    const column = (x: number): void => {
+      bg.fillStyle(LIT);  bg.fillRect(x, 80, 16, GND - 80);
+      bg.fillStyle(SHAD); bg.fillRect(x + 12, 80, 4, GND - 80);
+      bg.fillStyle(0xffffff); bg.fillRect(x, 80, 3, GND - 80);
+    };
+    [96, 150, 330, 384].forEach(column);
+
+    // ── Insegna: pannello bianco con loghi + fascia rossa ────────────────
+    const SGX = 192, SGY = 82, SGW = 96, SGH = 15;
+    bg.fillStyle(0xffffff); bg.fillRect(SGX, SGY, SGW, SGH);
+    bg.fillStyle(0xcfd2d0); bg.fillRect(SGX, SGY + SGH - 1, SGW, 1);
+    bg.fillStyle(0x123a8a); bg.fillRect(SGX + 8, SGY + 4, 10, 7);       // logo UE
+    bg.fillStyle(0xffd21e); bg.fillRect(SGX + 11, SGY + 6, 3, 3);
+    bg.fillStyle(0xcf2030); bg.fillCircle(SGX + SGW / 2, SGY + 7, 6);   // stemma LS
+    bg.fillStyle(0x1b3f8f); bg.fillCircle(SGX + SGW / 2, SGY + 7, 3);
+    bg.fillStyle(0x33384a); bg.fillRect(SGX + SGW - 18, SGY + 4, 10, 7); // logo MIUR
+    bg.fillStyle(0xd12030); bg.fillRect(SGX - 6, SGY + SGH, SGW + 12, 12); // fascia rossa
+    bg.fillStyle(0xa8121f); bg.fillRect(SGX - 6, SGY + SGH + 10, SGW + 12, 2);
+
+    // ── Pavimentazione a masselli ────────────────────────────────────────
+    bg.fillStyle(0xcbb48c); bg.fillRect(0, GND, W, H - GND);
+    bg.fillStyle(0xbba576);
+    for (let py = GND + 4; py < H; py += 8)
+      for (let px = ((py / 8 | 0) % 2) * 8; px < W; px += 16) bg.fillRect(px, py, 14, 6);
+    bg.fillStyle(0xa8916a); bg.fillRect(0, GND, W, 2);
 
     // ── Porta doppia centrale ────────────────────────────────────────────
     const DW = 32, DH = 52;
@@ -472,20 +534,18 @@ export class AulaScene extends Phaser.Scene {
 
     const doorGfx = el(this.add.graphics({ x: OX, y: OY }).setScrollFactor(0).setDepth(DEPTH + 1));
 
-    // Interno buio (sempre visibile sotto i pannelli)
-    doorGfx.fillStyle(0x060606);
+    // Interno intravisto oltre le porte a vetri (si scopre all'apertura)
+    doorGfx.fillStyle(0x243441);
     doorGfx.fillRect(DX, DY, DW * 2, DH);
 
-    // Cornice porta
-    doorGfx.lineStyle(2, 0x887755);
+    // Telaio metallico chiaro della vetrata d'ingresso
+    doorGfx.lineStyle(2, 0xc6cace);
     doorGfx.strokeRect(DX - 4, DY - 10, DW * 2 + 8, DH + 10);
+    // Soglia a filo pavimento
+    doorGfx.fillStyle(0x9a8a6a);
+    doorGfx.fillRect(DX - 6, DY + DH, DW * 2 + 12, 2);
 
-    // Gradini
-    doorGfx.fillStyle(0xccbbaa);
-    doorGfx.fillRect(DX - 14, DY + DH,     DW * 2 + 28, 5);
-    doorGfx.fillRect(DX - 22, DY + DH + 5, DW * 2 + 44, 5);
-
-    // Pannelli porta come Rectangle (tweenabili per apertura/chiusura).
+    // Ante a vetro come Rectangle (tweenabili per apertura/chiusura).
     // Cardini sui MONTANTI ESTERNI (come la porta della scena finale): aprendosi
     // le ante si ritraggono verso i lati, non collassano al centro.
     const LEFT_X  = OX + DX;            // montante sinistro
@@ -493,25 +553,25 @@ export class AulaScene extends Phaser.Scene {
     const PIVOT_Y = OY + DY + DH / 2;
 
     const panelL = el(
-      this.add.rectangle(LEFT_X, PIVOT_Y, DW, DH, 0x3a2010)
+      this.add.rectangle(LEFT_X, PIVOT_Y, DW, DH, 0x8fb6cc)
         .setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH + 2)
     );
     const panelR = el(
-      this.add.rectangle(RIGHT_X, PIVOT_Y, DW, DH, 0x4e2e14)
+      this.add.rectangle(RIGHT_X, PIVOT_Y, DW, DH, 0xa4c6da)
         .setOrigin(1, 0.5).setScrollFactor(0).setDepth(DEPTH + 2)
     );
 
-    // Maniglie (separate, nascoste all'apertura)
+    // Maniglioni verticali in metallo vicino alla mezzeria (nascosti all'apertura)
     const handleGfx = el(this.add.graphics({ x: OX, y: OY }).setScrollFactor(0).setDepth(DEPTH + 3));
-    handleGfx.fillStyle(0xddaa44);
-    handleGfx.fillRect(DX + DW - 4, DY + Math.floor(DH * 0.55), 4, 6);
-    handleGfx.fillRect(DX + DW + 1, DY + Math.floor(DH * 0.55), 4, 6);
+    handleGfx.fillStyle(0xdfe4e6);
+    handleGfx.fillRect(DX + DW - 5, DY + 12, 2, DH - 24);
+    handleGfx.fillRect(DX + DW + 3, DY + 12, 2, DH - 24);
 
-    // Targa scuola
-    el(this.add.text(OX + W / 2, OY + BY + 14, 'LICEO G. STAMPACCHIA', {
+    // Insegna: scritta "LICEO CLASSICO" sulla fascia rossa
+    el(this.add.text(OX + W / 2, OY + 103, 'LICEO CLASSICO', {
       fontFamily: FONT, fontSize: '5px',
-      color: '#443311', stroke: '#d8c898', strokeThickness: 2,
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(DEPTH + 2));
+      color: '#ffffff', stroke: '#7a0f18', strokeThickness: 2,
+    }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(DEPTH + 2));
 
     // ── Personaggi davanti alla scuola (distanziati orizzontalmente) ─────
     const CHAR_Y        = 232;

@@ -411,36 +411,84 @@ export class StradaScene extends Phaser.Scene {
   }
 
   private drawLiceo(g: Phaser.GameObjects.Graphics): void {
-    // Liceo Stampacchia in fondo a destra
-    g.fillStyle(0xc8c0b8);
-    g.fillRect(740, 80, 220, 115);
-    g.lineStyle(1, 0x9a9089);
-    g.strokeRect(740, 80, 220, 115);
-    g.fillStyle(0xaaa29a);
-    g.fillRect(736, 74, 228, 10);
-    // finestre
-    g.fillStyle(0x9fc4d8);
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 5; c++) {
-        g.fillRect(756 + c * 40, 96 + r * 34, 22, 20);
-        // croce finestra
-        g.lineStyle(1, 0x7ab0c8, 0.7);
-        g.lineBetween(756 + c * 40 + 11, 96 + r * 34, 756 + c * 40 + 11, 96 + r * 34 + 20);
-        g.lineBetween(756 + c * 40, 96 + r * 34 + 10, 756 + c * 40 + 22, 96 + r * 34 + 10);
-      }
+    // Liceo Stampacchia in fondo a destra — stessa facciata della cutscene
+    const BX = 740, BW = 220, GND = 195;
+    const WHITE = 0xf4f4ef, LIT = 0xffffff, SHAD = 0xd6d8d3;
+    const STONE = 0xe4d5b6, STONE2 = 0xcfbc95, GLASS = 0x7aa6c2;
+
+    // Corpo bianco
+    g.fillStyle(WHITE); g.fillRect(BX, 94, BW, GND - 94);
+    g.fillStyle(LIT);   g.fillRect(BX, 94, BW, 3);
+
+    // Attico rialzato centrale con vetrata e pilastrini in pietra
+    const AX = BX + 60, AW = 100, ATY = 72, ATH = 22;
+    g.fillStyle(WHITE); g.fillRect(AX, ATY, AW, ATH);
+    g.fillStyle(LIT);   g.fillRect(AX, ATY, AW, 3);
+    g.fillStyle(0x2c4a5c); g.fillRect(AX + 8, ATY + 8, AW - 16, 11);
+    g.fillStyle(STONE);
+    for (let px = AX + 18; px < AX + AW - 10; px += 20) g.fillRect(px, ATY + 6, 4, 15);
+
+    // Parete di fondo del portico (in ombra)
+    g.fillStyle(0xe9eae6); g.fillRect(BX, 113, BW, GND - 113);
+    g.fillStyle(0x2a3a46, 0.14); g.fillRect(BX, 113, BW, 6);
+
+    // Piloni in pietra ai lati + accenni di murales
+    const pier = (x: number, w: number): void => {
+      g.fillStyle(STONE); g.fillRect(x, 113, w, GND - 113);
+      g.fillStyle(STONE2);
+      for (let sy = 116; sy < GND; sy += 8)
+        for (let sx = x + 2 + ((sy / 8 | 0) % 2) * 7; sx < x + w - 2; sx += 14) g.fillRect(sx, sy, 11, 6);
+    };
+    pier(BX, 30); pier(BX + BW - 30, 30);
+    g.fillStyle(0x2b6fb0); g.fillRect(BX + 4, 150, 22, 43);
+    g.fillStyle(0xe23b3b); g.fillRect(BX + 8, 158, 7, 9);
+    g.fillStyle(0x39b54a); g.fillRect(BX + 15, 166, 8, 16);
+    g.fillStyle(0x7a1f1f); g.fillRect(BX + BW - 26, 150, 22, 43);
+    g.fillStyle(0xb03a2e); g.fillRect(BX + BW - 22, 158, 14, 14);
+
+    // Vetrate del portico + porta a vetri centrale
+    g.fillStyle(GLASS);   g.fillRect(BX + 34, 126, BW - 68, GND - 126);
+    g.fillStyle(0xa9cfe4); g.fillRect(BX + 34, 126, BW - 68, 2);
+    g.fillStyle(0x5f8aa6); g.fillRect(BX + 92, 138, 36, GND - 138);
+    g.fillStyle(0xcfe2ee); g.fillRect(BX + 109, 140, 2, GND - 142);
+
+    // Colonne bianche che incorniciano l'ingresso
+    const col = (x: number): void => {
+      g.fillStyle(LIT);  g.fillRect(x, 112, 10, GND - 112);
+      g.fillStyle(SHAD); g.fillRect(x + 7, 112, 3, GND - 112);
+    };
+    col(BX + 66); col(BX + BW - 76);
+
+    // Tettoia orizzontale (aggetto) + ombra
+    g.fillStyle(LIT);  g.fillRect(BX - 8, 103, BW + 16, 9);
+    g.fillStyle(SHAD); g.fillRect(BX - 8, 112, BW + 16, 2);
+
+    // Insegna: pannello bianco con stemma + fascia rossa
+    g.fillStyle(0xffffff); g.fillRect(BX + 62, 114, 96, 8);
+    g.fillStyle(0xcf2030); g.fillCircle(BX + 110, 118, 4);
+    g.fillStyle(0x1b3f8f); g.fillCircle(BX + 110, 118, 2);
+    g.fillStyle(0x123a8a); g.fillRect(BX + 70, 116, 8, 5);
+    g.fillStyle(0x33384a); g.fillRect(BX + 134, 116, 8, 5);
+    g.fillStyle(0xd12030); g.fillRect(BX + 58, 122, 104, 9);
+    g.fillStyle(0xa8121f); g.fillRect(BX + 58, 129, 104, 2);
+
+    // Bandiere: tricolore + UE, a destra dell'insegna
+    g.fillStyle(0x888888); g.fillRect(BX + 168, 96, 2, 20); g.fillRect(BX + 186, 98, 2, 18);
+    g.fillStyle(0x009246); g.fillRect(BX + 170, 96, 6, 8);
+    g.fillStyle(0xffffff); g.fillRect(BX + 176, 96, 6, 8);
+    g.fillStyle(0xce2b37); g.fillRect(BX + 182, 96, 6, 8);
+    g.fillStyle(0x1b3f8f); g.fillRect(BX + 188, 98, 15, 10);
+    g.fillStyle(0xffd21e);
+    for (let s = 0; s < 8; s++) {
+      const a = (s / 8) * Math.PI * 2;
+      g.fillRect(BX + 195 + Math.round(Math.cos(a) * 4), 103 + Math.round(Math.sin(a) * 3), 1, 1);
     }
-    // cancello (ingresso con sbarre)
-    g.fillStyle(0x55504a);
-    g.fillRect(840, 152, 50, 43);
-    g.fillStyle(0x2b2825);
-    for (let i = 0; i < 6; i++) g.fillRect(844 + i * 8, 154, 3, 41);
-    // Bandiera italiana (asta + tricolore)
-    g.fillStyle(0x888888);
-    g.fillRect(958, 48, 2, 32); // asta
-    g.fillStyle(0x009246); g.fillRect(960, 48, 8, 7);  // verde
-    g.fillStyle(0xffffff); g.fillRect(968, 48, 8, 7);  // bianco
-    g.fillStyle(0xce2b37); g.fillRect(976, 48, 8, 7);  // rosso
-    this.addLabel(850, 66, 'LICEO STAMPACCHIA');
+
+    // Scritta sulla fascia rossa + nome edificio
+    this.add.text(BX + 110, 126, 'LICEO CLASSICO', {
+      fontFamily: FONT, fontSize: '4px', color: '#ffffff',
+    }).setOrigin(0.5, 0.5);
+    this.addLabel(850, 64, 'LICEO STAMPACCHIA');
   }
 
   private drawTrees(g: Phaser.GameObjects.Graphics): void {

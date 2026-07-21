@@ -414,31 +414,34 @@ export class CeceScene extends Phaser.Scene {
     await this.tweenP({ targets: caption, alpha: 0, duration: 400 });
     caption.destroy();
 
-    // 12 personaggi su 3 fasce di profondità
+    // 12 personaggi su 3 fasce di profondità.
+    // NB: le `y` sono il CENTRO dello sprite; i piedi cadono a y + (34·scaleF)/2.
+    // Valori scelti così che i piedi poggino sull'asfalto (strada y≥200), con
+    // gradiente prospettico: fondo più in alto/piccolo, primo piano più in basso.
     type WD = { id: string; startX: number; y: number; scaleF: number; dur: number };
     const defs: WD[] = [
-      // fondo
-      { id: 'ext0', startX: -10,  y: 187, scaleF: 0.72, dur: 5200 },
-      { id: 'ext1', startX: -45,  y: 189, scaleF: 0.72, dur: 5400 },
-      { id: 'ext2', startX: -80,  y: 186, scaleF: 0.72, dur: 5000 },
-      { id: 'ext3', startX:-115,  y: 188, scaleF: 0.72, dur: 5300 },
-      // mezzo
-      { id: 'guglielmo', startX: -18, y: 194, scaleF: 0.86, dur: 4600 },
-      { id: 'aniceto',   startX: -55, y: 196, scaleF: 0.86, dur: 4800 },
-      { id: 'ext4',      startX: -88, y: 193, scaleF: 0.86, dur: 4700 },
-      { id: 'ext5',      startX:-125, y: 195, scaleF: 0.86, dur: 4900 },
-      // primo piano — festeggiati + Cece in testa
-      { id: 'cece',    startX:  10, y: 202, scaleF: 1.0, dur: 3800 },
-      { id: 'umberto', startX: -25, y: 204, scaleF: 1.0, dur: 4200 },
-      { id: 'bubi',    startX: -55, y: 200, scaleF: 1.0, dur: 4000 },
-      { id: 'trande',  startX: -90, y: 202, scaleF: 1.0, dur: 4300 },
+      // fondo → piedi ≈ 210
+      { id: 'ext0', startX: -10,  y: 198, scaleF: 0.72, dur: 5200 },
+      { id: 'ext1', startX: -45,  y: 199, scaleF: 0.72, dur: 5400 },
+      { id: 'ext2', startX: -80,  y: 197, scaleF: 0.72, dur: 5000 },
+      { id: 'ext3', startX:-115,  y: 198, scaleF: 0.72, dur: 5300 },
+      // mezzo → piedi ≈ 222
+      { id: 'guglielmo', startX: -18, y: 206, scaleF: 0.86, dur: 4600 },
+      { id: 'aniceto',   startX: -55, y: 208, scaleF: 0.86, dur: 4800 },
+      { id: 'ext4',      startX: -88, y: 206, scaleF: 0.86, dur: 4700 },
+      { id: 'ext5',      startX:-125, y: 207, scaleF: 0.86, dur: 4900 },
+      // primo piano — festeggiati + Cece in testa → piedi ≈ 234
+      { id: 'cece',    startX:  10, y: 217, scaleF: 1.0, dur: 3800 },
+      { id: 'umberto', startX: -25, y: 218, scaleF: 1.0, dur: 4200 },
+      { id: 'bubi',    startX: -55, y: 216, scaleF: 1.0, dur: 4000 },
+      { id: 'trande',  startX: -90, y: 217, scaleF: 1.0, dur: 4300 },
     ];
 
     const walkers: Phaser.GameObjects.Sprite[] = [];
     for (const d of defs) {
       const s = this.add.sprite(d.startX, d.y, `char-${d.id}`, 1)
         .setScale(CHAR_SCALE * d.scaleF).setDepth(d.y);
-      s.play(`${d.id}-idle-right`);
+      s.play(`${d.id}-walk-right`);  // gambe in movimento durante la camminata
       walkers.push(s);
       this.tweens.add({ targets: s, x: W + 30, duration: d.dur, ease: 'Linear' });
     }
@@ -453,21 +456,68 @@ export class CeceScene extends Phaser.Scene {
   // ─── Helper: door overlay (riusato in entrambe le fasi) ─────────────────────
 
   private makeDoorOverlay(): {
-    gfx: Phaser.GameObjects.Graphics;
     open: () => Promise<void>;
     close: () => Promise<void>;
   } {
     const DOOR_L = 221, DOOR_T = 134, DOOR_W = 38, DOOR_H = 61;
-    const gfx = this.add.graphics().setDepth(4).setAlpha(0);
-    gfx.fillStyle(0xffcc55, 1);
-    gfx.fillRect(DOOR_L, DOOR_T, DOOR_W, DOOR_H);
-    gfx.fillStyle(0xffee99, 0.45);
-    gfx.fillRect(DOOR_L + 3, DOOR_T + 2, 15, DOOR_H - 2);
+    const HALF = DOOR_W / 2;
+
+    // ── Vano interno illuminato (dietro le ante) ─────────────────────────────
+    const light = this.add.graphics().setDepth(4);
+    light.fillStyle(0x241608, 1); light.fillRect(DOOR_L, DOOR_T, DOOR_W, DOOR_H);       // ombra vano
+    light.fillStyle(0xffcc55, 1); light.fillRect(DOOR_L + 2, DOOR_T + 2, DOOR_W - 4, DOOR_H - 3); // luce calda
+    light.fillStyle(0xffee99, 0.5); light.fillRect(DOOR_L + 4, DOOR_T + 3, 9, DOOR_H - 6);        // taglio più chiaro
+
+    // ── Anta sinistra: cardine sul montante SX (x = DOOR_L) ──────────────────
+    const leftLeaf = this.add.graphics().setDepth(5);
+    leftLeaf.setPosition(DOOR_L, DOOR_T);
+    leftLeaf.fillStyle(0x8b5030, 1); leftLeaf.fillRect(0, 0, HALF, DOOR_H);
+    leftLeaf.fillStyle(0x7a4020, 1); leftLeaf.fillRect(2, 2, HALF - 3, DOOR_H - 4);
+    leftLeaf.fillStyle(0xffcc44, 1); leftLeaf.fillRect(HALF - 6, Math.round(DOOR_H / 2), 4, 3); // maniglia
+
+    // ── Anta destra: cardine sul montante DX (x = DOOR_L + DOOR_W) ───────────
+    const rightLeaf = this.add.graphics().setDepth(5);
+    rightLeaf.setPosition(DOOR_L + DOOR_W, DOOR_T);
+    rightLeaf.fillStyle(0x8b5030, 1); rightLeaf.fillRect(-HALF, 0, HALF, DOOR_H);
+    rightLeaf.fillStyle(0x7a4020, 1); rightLeaf.fillRect(-HALF + 1, 2, HALF - 3, DOOR_H - 4);
+    rightLeaf.fillStyle(0xffcc44, 1); rightLeaf.fillRect(-HALF + 2, Math.round(DOOR_H / 2), 4, 3); // maniglia
+
+    // Le ante scalano in X attorno al proprio cardine: scaleX 1 = chiusa, ~0 = aperta.
     return {
-      gfx,
-      open:  () => this.tweenP({ targets: gfx, alpha: 1, duration: 200 }),
-      close: () => this.tweenP({ targets: gfx, alpha: 0, duration: 350 }),
+      open: () => Promise.all([
+        this.tweenP({ targets: leftLeaf,  scaleX: 0.06, duration: 420, ease: 'Quad.easeIn' }),
+        this.tweenP({ targets: rightLeaf, scaleX: 0.06, duration: 420, ease: 'Quad.easeIn' }),
+      ]).then(() => undefined),
+      close: () => Promise.all([
+        this.tweenP({ targets: leftLeaf,  scaleX: 1, duration: 480, ease: 'Quad.easeOut' }),
+        this.tweenP({ targets: rightLeaf, scaleX: 1, duration: 480, ease: 'Quad.easeOut' }),
+      ]).then(() => undefined),
     };
+  }
+
+  /**
+   * Fa entrare una fila di personaggi nella porta di casa Cece UNO ALLA VOLTA:
+   * ciascuno cammina fino alla soglia, poi sale nel vano rimpicciolendo e
+   * svanisce dentro. La porta va aperta prima e chiusa dopo dal chiamante.
+   */
+  private async enterDoorInLine(
+    sprites: Record<string, Phaser.GameObjects.Sprite>,
+    ids: string[],
+    doorCx: number,
+  ): Promise<void> {
+    for (const id of ids) {
+      const s = sprites[id];
+      s.setDepth(300);                        // chi entra passa davanti agli altri
+      s.play(`${id}-walk-right`);
+      await this.tweenP({ targets: s, x: doorCx, duration: 520, ease: 'Linear' });
+      s.play(`${id}-walk-up`);
+      await this.tweenP({
+        targets: s, y: 176, scale: CHAR_SCALE * 0.7, alpha: 0,
+        duration: 360, ease: 'Quad.easeIn',
+      });
+      s.destroy();
+      await this.delay(160);                  // in fila: uno alla volta, non insieme
+    }
   }
 
   // ─── Fase 2a: tutti arrivano fuori → pipì emergency → transizione a PipScene ─
@@ -477,20 +527,22 @@ export class CeceScene extends Phaser.Scene {
     const DOOR_CX = 240;
     const door = this.makeDoorOverlay();
 
-    // Gruppo arriva da sinistra
-    const groupDefs: [string, number, number][] = [
-      ['cece',      60,  185],
-      ['umberto',  105,  190],
-      ['bubi',     135,  188],
-      ['trande',   165,  190],
-      ['guglielmo', 82,  178],
-      ['aniceto',  118,  176],
+    // Gruppo arriva da sinistra.
+    // [id, x, y(centro), scaleF] — y scelte perché i piedi (y + 17·scaleF)
+    // poggino sull'asfalto (strada y≥203); i due dietro un filo più su e piccoli.
+    const groupDefs: [string, number, number, number][] = [
+      ['cece',      60,  202, 1.0],
+      ['umberto',  105,  204, 1.0],
+      ['bubi',     135,  203, 1.0],
+      ['trande',   165,  204, 1.0],
+      ['guglielmo', 82,  195, 0.86],
+      ['aniceto',  118,  196, 0.86],
     ];
     const sprites: Record<string, Phaser.GameObjects.Sprite> = {};
-    for (const [id, x, y] of groupDefs) {
+    for (const [id, x, y, sf] of groupDefs) {
       sprites[id] = this.add.sprite(x - 60, y, `char-${id}`, 1)
-        .setScale(CHAR_SCALE * (y < 185 ? 0.86 : 1.0)).setDepth(y);
-      sprites[id].play(`${id}-idle-right`);
+        .setScale(CHAR_SCALE * sf).setDepth(y);
+      sprites[id].play(`${id}-walk-right`);  // gambe in movimento durante l'arrivo
     }
     await this.tweenP({ targets: Object.values(sprites), x: `+=55`, duration: 1200, ease: 'Quad.easeOut' });
 
@@ -501,24 +553,26 @@ export class CeceScene extends Phaser.Scene {
     // Umberto ha un problema urgente
     await this.dlgAuto(PIP_SETUP_LINES);
 
-    // Umberto, Bubi, Trande si spostano verso il muretto (sinistra)
-    for (const id of ['umberto', 'bubi', 'trande']) sprites[id].play(`${id}-idle-left`);
-    await this.tweenP({
-      targets: ['umberto', 'bubi', 'trande'].map(id => sprites[id]),
-      x: 40, duration: 700, ease: 'Linear',
-    });
-    for (const id of ['umberto', 'bubi', 'trande']) sprites[id].play(`${id}-idle-down`);
+    // Umberto, Bubi, Trande si allontanano affiancati ed ESCONO dall'inquadratura
+    // a sinistra (verso il muretto fuori campo): così si capisce che se ne vanno.
+    const exitLeft: Record<string, { x: number; y: number }> = {
+      umberto: { x: -80, y: 224 },
+      bubi:    { x: -48, y: 222 },
+      trande:  { x: -16, y: 224 },
+    };
+    for (const id of ['umberto', 'bubi', 'trande']) sprites[id].play(`${id}-walk-left`);
+    await Promise.all(['umberto', 'bubi', 'trande'].map(id =>
+      this.tweenP({
+        targets: sprites[id], x: exitLeft[id].x, y: exitLeft[id].y,
+        duration: 1150, ease: 'Linear',
+      }),
+    ));
+    ['umberto', 'bubi', 'trande'].forEach(id => sprites[id].destroy());
 
-    // Nel frattempo Cece + gli altri scivolano dentro in silenzio
-    await this.delay(400);
-    for (const id of ['cece', 'guglielmo', 'aniceto']) sprites[id].play(`${id}-idle-right`);
-    await this.tweenP({
-      targets: ['cece', 'guglielmo', 'aniceto'].map(id => sprites[id]),
-      x: DOOR_CX, duration: 700, ease: 'Linear',
-    });
+    // Cece + gli altri entrano in casa UNO ALLA VOLTA, in fila: la porta si apre
+    // una volta, i tre entrano in sequenza, poi si richiude (all'incontrario).
     await door.open();
-    await this.delay(120);
-    ['cece', 'guglielmo', 'aniceto'].forEach(id => { sprites[id].setAlpha(0); sprites[id].destroy(); });
+    await this.enterDoorInLine(sprites, ['cece', 'guglielmo', 'aniceto'], DOOR_CX);
     await door.close();
 
     await this.delay(600);
@@ -537,9 +591,9 @@ export class CeceScene extends Phaser.Scene {
 
     // Solo Umberto, Bubi, Trande — erano al muretto (partono da sinistra)
     const trioDefs: [string, number, number][] = [
-      ['umberto', 50,  190],
-      ['bubi',    80,  188],
-      ['trande',  110, 190],
+      ['umberto', 50,  203],
+      ['bubi',    80,  201],
+      ['trande',  110, 203],
     ];
     const sprites: Record<string, Phaser.GameObjects.Sprite> = {};
     for (const [id, x, y] of trioDefs) {
@@ -561,14 +615,8 @@ export class CeceScene extends Phaser.Scene {
     await this.delay(150);
     await this.dlgAuto(ENTER_LINES, 1600);
 
-    // Trio entra
-    for (const id of ['umberto', 'bubi', 'trande']) sprites[id].play(`${id}-idle-right`);
-    await this.tweenP({
-      targets: Object.values(sprites),
-      x: DOOR_CX, duration: 700, ease: 'Linear',
-    });
-    await this.delay(150);
-    Object.values(sprites).forEach(s => { s.setAlpha(0); s.destroy(); });
+    // Trio entra UNO ALLA VOLTA, in fila (porta già aperta da Cece)
+    await this.enterDoorInLine(sprites, ['umberto', 'bubi', 'trande'], DOOR_CX);
     await door.close();
   }
 

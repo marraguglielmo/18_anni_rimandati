@@ -29,6 +29,7 @@ export class SystemUIScene extends Phaser.Scene {
   private isPausedByUs = false;
   private pausedSceneKeys: string[] = [];
   private pausePanel?: Phaser.GameObjects.Container;
+  private pauseCleanup: Array<() => void> = [];
 
   private konamiIdx = 0;
   private wordBuffer = '';
@@ -97,6 +98,8 @@ export class SystemUIScene extends Phaser.Scene {
       this.game.sound.resumeAll();
       this.pausePanel?.destroy();
       this.pausePanel = undefined;
+      for (const fn of this.pauseCleanup) fn();
+      this.pauseCleanup = [];
       return;
     }
 
@@ -123,8 +126,8 @@ export class SystemUIScene extends Phaser.Scene {
     const veil = this.add.rectangle(cx, cy, W, H, 0x000000, 0.62);
 
     const panel = this.add.graphics();
-    const PW = 380;
-    const PH = 230;
+    const PW = 400;
+    const PH = 296;
     panel.fillStyle(0x0a0a14, 0.94);
     panel.fillRoundedRect(cx - PW / 2, cy - PH / 2, PW, PH, 10);
     panel.lineStyle(3, 0xffdd44, 1);
@@ -141,7 +144,6 @@ export class SystemUIScene extends Phaser.Scene {
 
     const lines = [
       '[P]  RIPRENDI',
-      `[M]  AUDIO ${Settings.data.muted ? 'OFF' : 'ON'}`,
     ];
     const items = lines.map((txt, i) =>
       this.add
@@ -153,16 +155,65 @@ export class SystemUIScene extends Phaser.Scene {
         .setOrigin(0.5)
     );
 
-    const hint = this.add
-      .text(cx, cy + PH / 2 - 24, 'psst... ↑↑↓↓←→←→ B A', {
+    // ── Cece che spia dal fondo del menu ─────────────────────────────
+    const CECE_QUIPS = [
+      '«Tanto so già come finisce.»',
+      '«In pausa? La vita no, eh.»',
+      '«Ti guardo. Sempre.»',
+      '«Rifletti pure. O scappa.»',
+      '«Metti in pausa. Io ho tempo.»',
+      '«Lo sai che è tutto finto?»',
+    ];
+    const quip = Phaser.Utils.Array.GetRandom(CECE_QUIPS);
+
+    const extras: Phaser.GameObjects.GameObject[] = [];
+    const ceceY = cy + PH / 2 - 86;
+    const ceceKey = getPortraitKey(this, 'cece');
+    if (ceceKey) {
+      const faceRing = this.add.circle(cx, ceceY, 38, 0xffdd44).setStrokeStyle(3, 0xff7700);
+      const face = this.add.image(cx, ceceY, ceceKey).setDisplaySize(66, 66);
+      const maskShape = this.make.graphics({ x: 0, y: 0 });
+      maskShape.fillCircle(cx, ceceY, 34);
+      face.setMask(maskShape.createGeometryMask());
+      const floatTween = this.tweens.add({
+        targets: [faceRing, face],
+        y: ceceY - 3,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      // il mask segue il galleggiamento del volto (niente clipping)
+      const maskTween = this.tweens.add({
+        targets: maskShape,
+        y: -3,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      // la maschera e i suoi tween vivono fuori dal container: puliscili a mano
+      this.pauseCleanup.push(() => {
+        floatTween.stop();
+        maskTween.stop();
+        maskShape.destroy();
+      });
+      extras.push(faceRing, face);
+    }
+
+    const quipText = this.add
+      .text(cx, cy + PH / 2 - 26, quip, {
         fontFamily: FONT,
-        fontSize: '8px',
-        color: '#555577',
+        fontSize: '10px',
+        color: '#ffcc66',
+        align: 'center',
+        wordWrap: { width: PW - 48 },
       })
       .setOrigin(0.5);
+    extras.push(quipText);
 
     this.pausePanel = this.add
-      .container(0, 0, [veil, panel, title, ...items, hint])
+      .container(0, 0, [veil, panel, title, ...items, ...extras])
       .setDepth(9200)
       .setAlpha(0);
     this.tweens.add({ targets: this.pausePanel, alpha: 1, duration: 160 });

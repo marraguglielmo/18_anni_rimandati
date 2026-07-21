@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 import { CHAR_CONFIGS, generateSpriteTexture, loadPortraits, getPortraitKey } from '../systems/CharacterSprite';
 import { TransitionSystem, UI_OFF_X, UI_OFF_Y } from '../systems/TransitionSystem';
+import { Juice } from '../systems/Juice';
+import { AudioManager } from '../systems/AudioManager';
 
 const W = GAME_WIDTH;   // 480
 const H = GAME_HEIGHT;  // 270
@@ -16,7 +18,10 @@ const TGT_XMIN = 20;
 const TGT_XMAX = W - 20;
 const TGT_YMIN = 18;
 
-const GOAL = 15;  // punti per vincere
+const GOAL = 20;  // punti per vincere
+
+const FIRE_COOLDOWN = 150;    // ms minimi tra un colpo e l'altro (anti spam-click)
+const TIME_RAMP_MS  = 75000;  // la difficoltà tende a 1 anche solo col tempo (~75s)
 
 // ─────────────────────────────────────────────────────────────────────────────
 type TargetKind = 'frog' | 'cricket' | 'butterfly' | 'mosquito' | 'bird' | 'fly' | 'cece';
@@ -83,6 +88,9 @@ export class PipScene extends Phaser.Scene {
   private spawnTimer = 0;
   private nextSpawn  = 2000;
 
+  private lastShot   = 0;   // timestamp ultimo colpo (cooldown)
+  private startTime  = 0;   // quando la partita è davvero iniziata (rampa tempo)
+
   // mirino (world coords, con lag ubriachezza)
   private crossX = W / 2;
   private crossY = 80;
@@ -107,8 +115,12 @@ export class PipScene extends Phaser.Scene {
   private umArms!:     Phaser.GameObjects.Graphics;
   /** Erba in primo piano (depth 20): si sovrappone ai bersagli mentre salgono dall'erba. */
   private fgGrass!:    Phaser.GameObjects.Graphics;
+  /** Pozzanghera ai piedi di Umberto: cresce col punteggio. */
+  private puddleGfx!:  Phaser.GameObjects.Graphics;
   // HUD (setScrollFactor(0) + UI_OFF_X/Y come da convenzione del progetto)
   private scoreText!: Phaser.GameObjects.Text;
+  /** Barra "vescica": urgenza che cala man mano che Umberto si libera. */
+  private reliefGfx!: Phaser.GameObjects.Graphics;
 
   constructor() { super('PipScene'); }
 
@@ -121,6 +133,7 @@ export class PipScene extends Phaser.Scene {
     this.score = 0; this.diff = 0;
     this.started = false; this.finished = false;
     this.targets = []; this.spawnTimer = 0; this.nextSpawn = 2000;
+    this.lastShot = 0; this.startTime = 0;
     this.crossX = W / 2; this.crossY = 80;
     this.rawX   = W / 2; this.rawY   = 80;
     this.drunkWobble = 0; this.drunkIntensity = 0;
@@ -136,6 +149,10 @@ export class PipScene extends Phaser.Scene {
     // Erba in primo piano (depth 20): oscura i bersagli nella fase di "rising"
     this.fgGrass = this.add.graphics().setDepth(20);
     this.drawForegroundGrass();
+
+    // Pozzanghera ai piedi (depth 33: sopra le gambe di Umberto → sembra davanti a lui)
+    this.puddleGfx = this.add.graphics().setDepth(33);
+    this.renderPuddle();
 
     // ── Umberto mezzo busto ─────────────────────────────────────────────────
     this.umGfx  = this.add.graphics().setDepth(30);
@@ -168,6 +185,14 @@ export class PipScene extends Phaser.Scene {
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(200);
 
+    // ── Barra "vescica": urgenza che cala col punteggio ──────────────────────
+    this.add.text(W / 2 + UI_OFF_X, 6 + UI_OFF_Y, 'PIPÌ', {
+      fontFamily: FONT, fontSize: '6px', color: '#ffffff',
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(200);
+    this.reliefGfx = this.add.graphics().setScrollFactor(0).setDepth(199);
+    this.renderReliefBar();
+
     // ── Input ───────────────────────────────────────────────────────────────
     this.input.setDefaultCursor('none');
 
@@ -188,6 +213,7 @@ export class PipScene extends Phaser.Scene {
         if (this.finished) return;
         this.finished = true;
         this.input.setDefaultCursor('default');
+        this.cameras.main.setRotation(0);
         TransitionSystem.fadeToScene(this, 'CeceScene', { phase: 'after-pip' }, 600);
       });
 
@@ -223,7 +249,9 @@ export class PipScene extends Phaser.Scene {
     const startGame = (): void => {
       this.input.off('pointerdown', startGame);
       [box, title, ...texts].forEach(o => o.destroy());
-      this.started = true;
+      this.started   = true;
+      this.startTime = this.time.now;
+      AudioManager.get().playSFX(this, 'confirm', 0.6);
     };
     this.input.on('pointerdown', startGame);
   }
@@ -265,7 +293,16 @@ export class PipScene extends Phaser.Scene {
 
     // ── Aggiorna bersagli e grafica ─────────────────────────────────────────
     this.updateTargets(delta, time);
-    this.diff = Math.min(1, this.score / GOAL);
+
+    // Difficoltà: blend punteggio + tempo → rampa più morbida (non solo a punti)
+    const scoreDiff = this.score / GOAL;
+    const timeDiff  = this.startTime ? Math.min(1, (time - this.startTime) / TIME_RAMP_MS) : 0;
+    this.diff = Math.min(1, 0.62 * scoreDiff + 0.45 * timeDiff);
+
+    // Rotazione camera "ubriaca" (0 quando sobrio)
+    this.cameras.main.setRotation(
+      this.drunkIntensity > 0 ? Math.sin(time / 500) * 0.03 * this.drunkIntensity : 0,
+    );
 
     this.renderDrunkFx();
     this.renderCrosshair();
@@ -285,6 +322,7 @@ export class PipScene extends Phaser.Scene {
     this.drunkIntensity = 1;
     this.drunkFlash     = 0.6;
     this.nextDrunkAt    = time + Phaser.Math.Between(4000, 7000);
+    AudioManager.get().playSFX(this, 'teleport', 0.3);
 
     const t = this.add.text(W / 2, H / 2 - 22, '...gira tutto...', {
       fontFamily: FONT, fontSize: '8px', color: '#ff88cc',
@@ -336,6 +374,7 @@ export class PipScene extends Phaser.Scene {
   private spawnCece(now: number): void {
     this.ceceActive = true;
     this.nextCeceAt = now + Phaser.Math.Between(12000, 20000);
+    AudioManager.get().playSFX(this, 'teleport', 0.35);
 
     const def = DEFS.find(d => d.kind === 'cece')!;
     const dir = Math.random() < 0.5 ? 1 : -1;
@@ -452,6 +491,8 @@ export class PipScene extends Phaser.Scene {
         t.vy    = -150;
         if (t.def.kind === 'cece') {
           this.tweens.add({ targets: t.bubble, alpha: 0, duration: 200 });
+        } else {
+          Juice.popText(this, t.x, Math.max(24, t.y - 14), 'FLY AWAY!', '#ffffff', 6);
         }
       }
 
@@ -492,6 +533,10 @@ export class PipScene extends Phaser.Scene {
   // ── SHOOT ─────────────────────────────────────────────────────────────────
 
   private shoot(): void {
+    // Cooldown: niente spam-click, ogni colpo deve contare
+    if (this.time.now - this.lastShot < FIRE_COOLDOWN) return;
+    this.lastShot = this.time.now;
+
     const wobR = this.drunkIntensity * 12;
     const aimX = this.crossX + Math.sin(this.drunkWobble) * wobR;
     const aimY = this.crossY + Math.cos(this.drunkWobble * 0.7) * wobR * 0.6;
@@ -510,13 +555,18 @@ export class PipScene extends Phaser.Scene {
     if (hit) {
       this.doHit(hit, aimX, aimY);
     } else {
-      // Disegna il cerchio a (0,0) locale, poi posiziona il Graphics sull'aim point
-      // così il tween scaleX/scaleY scala attorno al centro del cerchio
+      // Schizzo di pipì: goccia centrale + anello di increspatura che si allarga
       const sp = this.add.graphics().setDepth(45).setPosition(aimX, aimY);
-      sp.fillStyle(0xaaddff, 0.7);
+      sp.fillStyle(0xffdd44, 0.7);
       sp.fillCircle(0, 0, 5);
       this.tweens.add({ targets: sp, alpha: 0, scaleX: 2.2, scaleY: 2.2,
         duration: 360, onComplete: () => sp.destroy() });
+
+      const ring = this.add.graphics().setDepth(44).setPosition(aimX, aimY);
+      ring.lineStyle(1.5, 0xffe680, 0.85);
+      ring.strokeEllipse(0, 0, 9, 5);
+      this.tweens.add({ targets: ring, alpha: 0, scaleX: 3.2, scaleY: 3.2,
+        duration: 440, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
     }
   }
 
@@ -528,12 +578,20 @@ export class PipScene extends Phaser.Scene {
       this.destroyTarget(t);
       this.targets.splice(this.targets.indexOf(t), 1);
 
+      // Penalità "che sbaglio!": SFX stonato + scossone rosso + hit-stop
+      AudioManager.get().playSFX(this, 'scontro', 0.5);
+      Juice.hitStop(this, 80);
+      this.cameras.main.shake(180, 0.009);
+      Juice.burst(this, aimX, aimY, [0xff4444, 0x6ab0ff], 12);
+
       const msg = this.add.text(aimX, aimY - 8, 'CECE!\n-1', {
         fontFamily: FONT, fontSize: '9px', color: '#ff4444',
         stroke: '#000000', strokeThickness: 4, align: 'center',
       }).setOrigin(0.5).setDepth(60);
       this.tweens.add({ targets: msg, y: msg.y - 25, alpha: 0,
         duration: 1000, onComplete: () => msg.destroy() });
+      this.renderReliefBar();
+      this.renderPuddle();
     } else {
       this.score += t.def.points;
       t.phase = 'hit';  // il loop distrugge il frame successivo
@@ -549,12 +607,24 @@ export class PipScene extends Phaser.Scene {
       this.tweens.add({ targets: b, alpha: 0, scaleX: 1.8, scaleY: 1.8,
         duration: 320, onComplete: () => b.destroy() });
 
+      // Juice: peso all'impatto (particelle a tema, hit-stop breve, micro-shake)
+      Juice.burst(this, t.x, t.y, [t.def.color, t.def.color2], 10);
+      if (t.def.kind === 'bird') Juice.burst(this, t.x, t.y, [0xffffff, 0xdddddd], 8);
+      Juice.hitStop(this, 45);
+      this.cameras.main.shake(70, 0.0035);
+
+      // SFX: tintinnio positivo del punto guadagnato
+      AudioManager.get().playSFX(this, 'coin', 0.5);
+
       const pts = this.add.text(t.x, t.y - 8, `+${t.def.points}`, {
         fontFamily: FONT, fontSize: '10px', color: '#ffdd44',
         stroke: '#000000', strokeThickness: 4,
       }).setOrigin(0.5).setDepth(60);
       this.tweens.add({ targets: pts, y: pts.y - 26, alpha: 0,
         duration: 850, onComplete: () => pts.destroy() });
+
+      this.splashPuddle();
+      this.renderReliefBar();
     }
 
     this.scoreText.setText(`PUNTI: ${this.score}`);
@@ -568,7 +638,7 @@ export class PipScene extends Phaser.Scene {
       const p  = i / 12;
       const px = sx + (tx - sx) * p;
       const py = sy + (ty - sy) * p;
-      this.sprayGfx.fillStyle(0x88ddff, 0.9 - p * 0.5);
+      this.sprayGfx.fillStyle(0xffdd44, 0.9 - p * 0.5);
       this.sprayGfx.fillCircle(px, py, Math.max(0.5, 2.5 - p * 1.5));
     }
     this.tweens.add({
@@ -582,6 +652,9 @@ export class PipScene extends Phaser.Scene {
   private win(): void {
     this.finished = true;
     this.input.setDefaultCursor('default');
+    this.cameras.main.setRotation(0);
+    AudioManager.get().playSFX(this, 'fanfare', 0.6);
+    Juice.confetti(this, 70);
 
     const box = this.add.rectangle(W / 2, H / 2, 300, 100, 0x000000, 0.9).setDepth(100);
     const t1  = this.add.text(W / 2, H / 2 - 30, 'MISSIONE COMPIUTA!', {
@@ -926,14 +999,63 @@ export class PipScene extends Phaser.Scene {
     }
   }
 
+  // ── HUD BARRA VESCICA + POZZANGHERA ───────────────────────────────────────
+
+  /** Barra "urgenza pipì": piena e rossa a inizio, si svuota e diventa verde. */
+  private renderReliefBar(): void {
+    const g = this.reliefGfx;
+    g.clear();
+    const BARW = 108, BARH = 8;
+    const x0 = Math.round(W / 2 - BARW / 2) + UI_OFF_X;
+    const y0 = 15 + UI_OFF_Y;
+    const frac = Phaser.Math.Clamp(1 - this.score / GOAL, 0, 1);  // 1 = urgenza max
+
+    g.fillStyle(0x000000, 0.6); g.fillRect(x0 - 2, y0 - 2, BARW + 4, BARH + 4);
+    g.fillStyle(0x1c1a12, 1);   g.fillRect(x0, y0, BARW, BARH);
+
+    // colore rosso (urgente) → verde (sollievo)
+    const r  = Math.round(0x44 + (0xff - 0x44) * frac);
+    const gr = Math.round(0xdd - (0xdd - 0x44) * frac);
+    const col = (r << 16) | (gr << 8) | 0x44;
+    const fw  = Math.max(0, Math.round(BARW * frac));
+    g.fillStyle(col, 1);        g.fillRect(x0, y0, fw, BARH);
+    g.fillStyle(0xffffff, 0.28); g.fillRect(x0, y0, fw, 2);  // luce superiore
+  }
+
+  /** Pozzanghera ai piedi di Umberto: raggio proporzionale al punteggio. */
+  private renderPuddle(): void {
+    const g = this.puddleGfx;
+    g.clear();
+    const frac = Phaser.Math.Clamp(this.score / GOAL, 0, 1);
+    const rw = 10 + frac * 64;
+    const rh = 4  + frac * 8;
+    const cx = W / 2, cy = H - 3;
+    g.fillStyle(0xb8860b, 0.55); g.fillEllipse(cx, cy, rw + 5, rh + 3);
+    g.fillStyle(0xf2c53d, 0.7);  g.fillEllipse(cx, cy, rw, rh);
+    g.fillStyle(0xfff2a8, 0.6);  g.fillEllipse(cx - rw * 0.22, cy - 1, rw * 0.4, rh * 0.4);
+  }
+
+  /** Ridisegna la pozzanghera + increspatura animata a ogni colpo a segno. */
+  private splashPuddle(): void {
+    this.renderPuddle();
+    const ring = this.add.graphics().setDepth(34).setPosition(W / 2, H - 3);
+    ring.lineStyle(1, 0xfff2a8, 0.8);
+    ring.strokeEllipse(0, 0, 12, 5);
+    this.tweens.add({ targets: ring, scaleX: 2.6, scaleY: 2.6, alpha: 0,
+      duration: 420, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+  }
+
   // ── MIRINO DUCK HUNT (quadrato) ───────────────────────────────────────────
 
   private renderCrosshair(): void {
     const wobR = this.drunkIntensity * 12;
     const cx   = this.crossX + Math.sin(this.drunkWobble) * wobR;
     const cy   = this.crossY + Math.cos(this.drunkWobble * 0.7) * wobR * 0.6;
-    const S    = 14;
+    // Pulsazione viva del mirino + colore che vira al rosa quando ubriaco
+    const pulse = 1 + Math.sin(this.time.now / 170) * 0.07;
+    const S    = 14 * pulse;
     const GAP  = 3;
+    const MAIN = this.drunkIntensity > 0.35 ? 0xff88cc : 0x44eeff;
 
     this.crossGfx.clear();
 
@@ -945,7 +1067,7 @@ export class PipScene extends Phaser.Scene {
     }
 
     // Quadrato principale — stile Duck Hunt: bordo cyan (colore originale NES)
-    this.crossGfx.lineStyle(2, 0x44eeff, 0.95);
+    this.crossGfx.lineStyle(2, MAIN, 0.95);
     this.crossGfx.strokeRect(cx - S, cy - S, S * 2, S * 2);
 
     // Angoli rinforzati (cyan pieno)
@@ -984,8 +1106,16 @@ export class PipScene extends Phaser.Scene {
     if (i <= 0) return;
 
     // 2. Overlay colorato rosa/viola che copre tutto lo schermo
-    this.drunkGfx.fillStyle(0xdd44aa, i * 0.38);
+    this.drunkGfx.fillStyle(0xdd44aa, i * 0.44);
     this.drunkGfx.fillRect(0, 0, W, H);
+
+    // 2b. Bande orizzontali di "doppia visione" che scorrono lentamente
+    const t2 = this.time.now / 600;
+    for (let bnd = 0; bnd < 3; bnd++) {
+      const by = ((t2 + bnd * 0.4) % 1) * H;
+      this.drunkGfx.fillStyle(0xffaadd, i * 0.05);
+      this.drunkGfx.fillRect(0, by - 10, W, 20);
+    }
 
     // 3. Vignette scura pulsante ai bordi (simula visione tubulare ubriaca)
     const pulse = Math.sin(this.time.now / 220) * 0.5 + 0.5;  // 0–1

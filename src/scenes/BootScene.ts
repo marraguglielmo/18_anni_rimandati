@@ -17,7 +17,7 @@ const FONT = '"Press Start 2P", monospace';
 
 // ── DEBUG ────────────────────────────────────────────────────────────────────
 // Metti false per saltare il loader e andare subito alla schermata titolo
-const SHOW_LOADER = true;
+const SHOW_LOADER = false;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // File audio (l'utente li carica in public/assets/audio/; se mancano: silenzio)

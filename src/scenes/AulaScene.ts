@@ -363,13 +363,24 @@ export class AulaScene extends Phaser.Scene {
 
     // ── 2) Posiziona i personaggi già dentro l'aula (schermo ancora nero) ──
     // Nessuna animazione d'entrata in classe: l'abbiamo già vista fuori.
-    const START_Y = 232;
-    this.player.sprite.setPosition(240, START_Y);
-    this.umberto.setPosition(192, START_Y + 10);
-    this.chiara.setPosition(288, START_Y + 24);
+    // Distanziati nell'area d'ingresso (davanti ai banchi) così restano tutti
+    // e tre visibili e le targhette col nome non si accavallano.
+    // NB: durante il quadretto d'arrivo blocchiamo il "seguimi" dei follower
+    // (Umberto insegue Bubi, Chiara insegue Umberto) o si riammassano subito.
+    this.cutscene = true;
+    this.player.sprite.setPosition(240, 246);
+    this.umberto.setPosition(174, 250);
+    this.chiara.setPosition(306, 252);
     this.player.sprite.play('bubi-idle-down');
     this.umberto.play('umberto-idle-down');
     this.chiara.play('chiara-idle-down');
+    // Riallinea ombre, targhette e profondità alle nuove posizioni
+    this.player.sprite.setDepth(this.player.sprite.y);
+    for (const s of [this.umberto, this.chiara]) {
+      s.setDepth(s.y);
+      this.shadows.get(s)?.setPosition(s.x, s.y + SHADOW_OFFSET_Y).setDepth(s.y - 1);
+      this.nameLabels.get(s)?.setPosition(s.x, s.y - 20).setDepth(s.y + 1);
+    }
 
     // ── 3) Fade in dell'aula ──
     if (this.exteriorBlackout) {
@@ -391,6 +402,7 @@ export class AulaScene extends Phaser.Scene {
     this.dialogue.start({
       lines: DAZED_LINES,
       onComplete: () => {
+        this.cutscene = false;          // i follower riprendono a seguire Bubi
         this.player.locked = false;
         this.questHUD.show('Parla con Trande');
         this.questHUD.moveMarker(this.trande.x, this.trande.y);
@@ -473,17 +485,20 @@ export class AulaScene extends Phaser.Scene {
     doorGfx.fillRect(DX - 14, DY + DH,     DW * 2 + 28, 5);
     doorGfx.fillRect(DX - 22, DY + DH + 5, DW * 2 + 44, 5);
 
-    // Pannelli porta come Rectangle (tweenabili per apertura/chiusura)
-    const PIVOT_X = OX + DX + DW;   // asse centrale porta
+    // Pannelli porta come Rectangle (tweenabili per apertura/chiusura).
+    // Cardini sui MONTANTI ESTERNI (come la porta della scena finale): aprendosi
+    // le ante si ritraggono verso i lati, non collassano al centro.
+    const LEFT_X  = OX + DX;            // montante sinistro
+    const RIGHT_X = OX + DX + DW * 2;   // montante destro
     const PIVOT_Y = OY + DY + DH / 2;
 
     const panelL = el(
-      this.add.rectangle(PIVOT_X, PIVOT_Y, DW, DH, 0x3a2010)
-        .setOrigin(1, 0.5).setScrollFactor(0).setDepth(DEPTH + 2)
+      this.add.rectangle(LEFT_X, PIVOT_Y, DW, DH, 0x3a2010)
+        .setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH + 2)
     );
     const panelR = el(
-      this.add.rectangle(PIVOT_X, PIVOT_Y, DW, DH, 0x4e2e14)
-        .setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH + 2)
+      this.add.rectangle(RIGHT_X, PIVOT_Y, DW, DH, 0x4e2e14)
+        .setOrigin(1, 0.5).setScrollFactor(0).setDepth(DEPTH + 2)
     );
 
     // Maniglie (separate, nascoste all'apertura)
@@ -556,6 +571,7 @@ export class AulaScene extends Phaser.Scene {
       const dist = Math.hypot(DOOR_TARGET_X - x, DOOR_TARGET_Y - CHAR_Y);
       const walkDuration = Math.max(650, dist * 9);
 
+      // 1. cammina fino alla soglia
       await new Promise<void>(r =>
         this.tweens.add({
           targets: sp,
@@ -566,11 +582,19 @@ export class AulaScene extends Phaser.Scene {
           onComplete: () => r(),
         })
       );
+      // 2. sale nel vano, rimpicciolisce e svanisce dentro (come le altre porte)
       await new Promise<void>(r =>
-        this.tweens.add({ targets: sp, alpha: 0, duration: 180, onComplete: () => r() })
+        this.tweens.add({
+          targets: sp,
+          y: OY + DY + 8,
+          scaleX: CHAR_SCALE * 0.7, scaleY: CHAR_SCALE * 0.7,
+          alpha: 0,
+          duration: 320, ease: 'Quad.easeIn',
+          onComplete: () => r(),
+        })
       );
       if (i < extSprites.length - 1) {
-        await new Promise<void>(r => this.time.delayedCall(80, r));
+        await new Promise<void>(r => this.time.delayedCall(120, r));
       }
     }
 
@@ -1468,6 +1492,15 @@ export class AulaScene extends Phaser.Scene {
         this.addObstacle(col - 12, row - 7, 24, 14);
       }
     }
+
+    // ── Dettagli area d'ingresso (dove arrivano i ragazzi) ──────────────────
+    // Bacheca avvisi con fogli appuntati sulla parete destra
+    g.fillStyle(0x7a5c34); g.fillRect(WORLD_W - 16, 200, 14, 44);
+    g.fillStyle(0xc9a86a); g.fillRect(WORLD_W - 15, 202, 12, 40);
+    g.fillStyle(0xffffff, 0.85);
+    g.fillRect(WORLD_W - 13, 206, 5, 6);
+    g.fillRect(WORLD_W - 8,  216, 4, 7);
+    g.fillRect(WORLD_W - 13, 228, 6, 5);
 
     if (!this.textures.exists('tex-map-aula')) {
       g.generateTexture('tex-map-aula', WORLD_W, WORLD_H);

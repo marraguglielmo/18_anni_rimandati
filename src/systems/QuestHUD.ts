@@ -21,6 +21,7 @@ const BH = 30;
 export class QuestHUD {
   private readonly container: Phaser.GameObjects.Container;
   private readonly body: Phaser.GameObjects.Text;
+  private readonly brackets: Phaser.GameObjects.Graphics;
   private readonly by: number;
   private pulseTween: Phaser.Tweens.Tween | null = null;
   private marker: Phaser.GameObjects.Text | null = null;
@@ -40,29 +41,40 @@ export class QuestHUD {
       .setDepth(800)
       .setAlpha(0);
 
+    const ACCENT = 0xffdd44;
+    const L = -BW / 2, R = BW / 2, T = -BH / 2, B = BH / 2;
+
+    // Pannello scuro (niente cornice piena: la definiscono le staffe angolari)
     const bg = scene.add.graphics();
-    bg.fillStyle(0x0a0a12, 0.88);
-    bg.fillRoundedRect(-BW / 2, -BH / 2, BW, BH, 5);
-    bg.lineStyle(1.5, 0xffdd44, 1);
-    bg.strokeRoundedRect(-BW / 2, -BH / 2, BW, BH, 5);
-    bg.lineStyle(3, 0xffdd44, 1);
-    bg.lineBetween(-BW / 2 + 2, -BH / 2 + 5, -BW / 2 + 2, BH / 2 - 5);
+    bg.fillStyle(0x0a0a14, 0.9);
+    bg.fillRoundedRect(L, T, BW, BH, 3);
+
+    // Parentesi angolari stile menù JRPG (4 staffe a "L")
+    const AL = 9;    // lunghezza braccio
+    const TH = 2.5;  // spessore
+    const brackets = scene.add.graphics();
+    brackets.fillStyle(ACCENT, 1);
+    brackets.fillRect(L, T, AL, TH);            brackets.fillRect(L, T, TH, AL);            // ↖
+    brackets.fillRect(R - AL, T, AL, TH);       brackets.fillRect(R - TH, T, TH, AL);       // ↗
+    brackets.fillRect(L, B - TH, AL, TH);       brackets.fillRect(L, B - AL, TH, AL);       // ↙
+    brackets.fillRect(R - AL, B - TH, AL, TH);  brackets.fillRect(R - TH, B - AL, TH, AL);  // ↘
+    this.brackets = brackets;
 
     const title = scene.add
-      .text(0, -9, 'O B I E T T I V O', {
-        fontFamily: FONT, fontSize: '4px', color: '#ffdd44',
+      .text(0, -8, 'O B I E T T I V O', {
+        fontFamily: FONT, fontSize: '5px', color: '#ffdd44',
         stroke: '#000000', strokeThickness: 3,
       })
       .setOrigin(0.5, 0.5);
 
     this.body = scene.add
-      .text(0, 5, '', {
-        fontFamily: FONT, fontSize: '6px', color: '#ffffff',
+      .text(0, 6, '', {
+        fontFamily: FONT, fontSize: '7px', color: '#ffffff',
         stroke: '#000000', strokeThickness: 3, align: 'center',
       })
       .setOrigin(0.5, 0.5);
 
-    this.container.add([bg, title, this.body]);
+    this.container.add([bg, brackets, title, this.body]);
   }
 
   /** Container UI del pannello — usato per escluderlo dallo zoom della camera. */
@@ -86,7 +98,7 @@ export class QuestHUD {
   show(text: string): void {
     this.body.setText(text);
     if (this.pulseTween) { this.pulseTween.stop(); this.pulseTween = null; }
-    this.body.setAlpha(1);
+    this.brackets.setAlpha(1);
     this.container.setAlpha(0).setY(this.by - 14);
     this.scene.tweens.add({
       targets: this.container,
@@ -95,10 +107,11 @@ export class QuestHUD {
       duration: 420,
       ease: 'Back.easeOut',
       onComplete: () => {
+        // Lampeggio discreto delle sole staffe: segnala "attivo" senza toccare il testo
         this.pulseTween = this.scene.tweens.add({
-          targets: this.body,
-          alpha: 0.55,
-          duration: 880,
+          targets: this.brackets,
+          alpha: 0.45,
+          duration: 900,
           yoyo: true,
           repeat: -1,
           ease: 'Sine.easeInOut',
@@ -109,7 +122,7 @@ export class QuestHUD {
 
   clear(delayMs = 0): void {
     if (this.pulseTween) { this.pulseTween.stop(); this.pulseTween = null; }
-    this.body.setAlpha(1);
+    this.brackets.setAlpha(1);
     this.scene.time.delayedCall(delayMs, () => {
       this.scene.tweens.add({
         targets: this.container,

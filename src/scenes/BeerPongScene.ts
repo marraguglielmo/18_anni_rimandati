@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT } from '../config';
+import { GAME_WIDTH, GAME_HEIGHT, RENDER_SCALE } from '../config';
 import { DialogueSystem, SPEAKER_COLORS, type DialogueLine } from '../systems/DialogueSystem';
 import {
   addNameLabel,
@@ -14,11 +14,12 @@ import { AudioManager } from '../systems/AudioManager';
 
 const FONT = '"Press Start 2P", monospace';
 
-// Fisica della fionda (stile Angry Birds)
+// Fisica del lancio a mano
 const GRAV = 420; // px/s²
-const ANCHOR = { x: 118, y: 138 }; // forcella della fionda
-const MAX_DRAG = 52;
-const LAUNCH_K = 6.0; // velocità = trazione * K
+const ANCHOR = { x: 108, y: 150 }; // mano di Umberto: da qui parte la pallina
+const MAX_DRAG = 130;   // ampio: si può mirare liberamente in altezza e lunghezza
+const LAUNCH_K = 6.0;   // velocità = trazione * K
+const MIN_DROP_V = 90;  // velocità di caduta minima per entrare nel bicchiere (arco alto)
 const FLOOR_Y = 210;
 const TABLE = { x1: 140, x2: 432, y: 196 }; // piano fisico del tavolo
 const CUP_W = 13;
@@ -61,7 +62,6 @@ export class BeerPongScene extends Phaser.Scene {
   private dialogue!: DialogueSystem;
   private ball!: Phaser.GameObjects.Arc;
   private ballShadow!: Phaser.GameObjects.Ellipse;
-  private bands!: Phaser.GameObjects.Graphics;
   private dots: Phaser.GameObjects.Arc[] = [];
   private messageText!: Phaser.GameObjects.Text;
   private turnText!: Phaser.GameObjects.Text;
@@ -101,7 +101,7 @@ export class BeerPongScene extends Phaser.Scene {
     this.addPartyEffects();
     this.spawnCharacters();
     this.createCups();
-    this.createSling();
+    this.createBall();
     this.createUi();
     this.bindInput();
 
@@ -154,8 +154,10 @@ export class BeerPongScene extends Phaser.Scene {
 
       // 1. UMBERTO (interattivo) — il più ubriaco apre sempre
       if (this.cupsAlive(this.enemyCups) > 0) {
-        await this.showMessage('Tira UMBERTO! Trascina la palla e rilascia.');
+        await this.showMessage('Tira UMBERTO! Trascina dal suo braccio e rilascia.');
+        this.zoomToUmberto();
         const hit = await this.playerThrow();
+        this.resetZoom();
         await this.resolveThrow('umberto', hit, 'enemy');
       } else {
         await this.showMessage('Niente più bersagli per UMBERTO... che beve in attesa.');
@@ -215,7 +217,6 @@ export class BeerPongScene extends Phaser.Scene {
     this.activeTargets = this.enemyCups;
     this.ball.setPosition(ANCHOR.x, ANCHOR.y).setVisible(true);
     this.state = 'ready';
-    this.drawBands(ANCHOR.x, ANCHOR.y);
     return new Promise((resolve) => {
       this.throwResolve = resolve;
     });
@@ -260,6 +261,7 @@ export class BeerPongScene extends Phaser.Scene {
     side: 'player' | 'enemy'
   ): Promise<void> {
     if (!hit) {
+      AudioManager.get().playSFX(this, 'scontro', 0.4);   // suono "negativo" sul miss
       this.crowdReact('miss');
       await this.showMessage(
         Phaser.Math.RND.pick(['Mancato!', 'Fuori di poco!', 'La palla rotola via...'])
@@ -267,8 +269,8 @@ export class BeerPongScene extends Phaser.Scene {
       return;
     }
 
-    // splash + bicchiere eliminato
-    AudioManager.get().playSFX(this, 'hit');
+    // splash + bicchiere eliminato — suono "positivo" sul centro
+    AudioManager.get().playSFX(this, 'coin', 0.5);
     this.splash(hit.x, hit.top);
     hit.alive = false;
     this.tweens.add({
@@ -377,17 +379,16 @@ export class BeerPongScene extends Phaser.Scene {
         // trazione troppo corta: torna in attesa
         this.state = 'ready';
         this.ball.setPosition(ANCHOR.x, ANCHOR.y);
-        this.drawBands(ANCHOR.x, ANCHOR.y);
         this.hideDots();
         return;
       }
-      // lancio!
+      // lancio! (mira libera in altezza e lunghezza)
       this.vx = -drag.x * LAUNCH_K;
       this.vy = -drag.y * LAUNCH_K;
       this.bounces = 0;
       this.state = 'flying';
-      this.drawBands(ANCHOR.x, ANCHOR.y); // gli elastici scattano a riposo
       this.hideDots();
+      this.throwUmberto();
       AudioManager.get().playSFX(this, 'confirm', 0.5);
     });
   }
@@ -403,43 +404,48 @@ export class BeerPongScene extends Phaser.Scene {
     const bx = ANCHOR.x + drag.x;
     const by = ANCHOR.y + drag.y;
     this.ball.setPosition(bx, by);
-    this.drawBands(bx, by);
 
-    // anteprima traiettoria
+    // anteprima traiettoria: mostra l'intera parabola (altezza e lunghezza
+    // libere) finché resta a schermo, così si calcola il tiro a piacere.
     const vx = -drag.x * LAUNCH_K;
     const vy = -drag.y * LAUNCH_K;
+    const aiming = drag.length() >= 8;
     this.dots.forEach((dot, i) => {
-      const t = 0.09 * (i + 1);
-      dot
-        .setPosition(bx + vx * t, by + vy * t + 0.5 * GRAV * t * t)
-        .setVisible(drag.length() >= 8);
+      const t = 0.05 * (i + 1);
+      const px = bx + vx * t;
+      const py = by + vy * t + 0.5 * GRAV * t * t;
+      const onScreen = px > -10 && px < GAME_WIDTH + 10 && py < GAME_HEIGHT + 10;
+      dot.setPosition(px, py).setVisible(aiming && onScreen);
     });
   }
 
-  /** Elastici con leggera flessione + tasca portapalla. */
-  private drawBands(bx: number, by: number): void {
-    this.bands.clear();
-    const tips: [number, number][] = [
-      [ANCHOR.x - 9, ANCHOR.y - 7],
-      [ANCHOR.x + 9, ANCHOR.y - 7],
-    ];
-    for (const [tx, ty] of tips) {
-      // elastico a due toni con sag verso il basso
-      const midX = (tx + bx) / 2;
-      const midY = (ty + by) / 2 + 3;
-      this.bands.lineStyle(3, 0x5a2418, 1);
-      this.bands.beginPath();
-      this.bands.moveTo(tx, ty);
-      this.bands.lineTo(midX, midY);
-      this.bands.lineTo(bx, by);
-      this.bands.strokePath();
-      this.bands.lineStyle(1, 0x8a4530, 1);
-      this.bands.lineBetween(tx, ty, midX, midY);
-      this.bands.lineBetween(midX, midY, bx, by);
-    }
-    // tasca di cuoio dietro la palla
-    this.bands.fillStyle(0x6e4a2a, 1);
-    this.bands.fillRoundedRect(bx - 5, by - 3, 10, 7, 2);
+  /**
+   * Zoom leggero verso Umberto: segnala che tocca a lui.
+   * Va SEMPRE verso valori fissi noti (zoom base = RENDER_SCALE, centro 240,135
+   * impostati da fadeFromBlack) così lo zoom non si può mai accumulare.
+   */
+  private zoomToUmberto(): void {
+    const cam = this.cameras.main;
+    cam.zoomTo(RENDER_SCALE * 1.13, 340, 'Sine.easeInOut');
+    cam.pan(210, 150, 340, 'Sine.easeInOut');   // leggermente verso Umberto (sx)
+  }
+
+  /** Ripristina l'inquadratura base (identica a inizio scena). */
+  private resetZoom(): void {
+    const cam = this.cameras.main;
+    cam.zoomTo(RENDER_SCALE, 300, 'Sine.easeInOut');
+    cam.pan(GAME_WIDTH / 2, GAME_HEIGHT / 2, 300, 'Sine.easeInOut');
+  }
+
+  /** Braccio di Umberto: rapido affondo in avanti che simula il lancio. */
+  private throwUmberto(): void {
+    const s = this.sprites.get('umberto');
+    if (!s) return;
+    const x0 = s.x, y0 = s.y;
+    this.tweens.add({
+      targets: s, x: x0 + 7, y: y0 - 3,
+      duration: 90, yoyo: true, ease: 'Quad.easeOut',
+    });
   }
 
   private hideDots(): void {
@@ -467,11 +473,15 @@ export class BeerPongScene extends Phaser.Scene {
       .setPosition(nx, TABLE.y + 2)
       .setAlpha(Phaser.Math.Clamp(0.45 - (TABLE.y - ny) / 250, 0.08, 0.45));
 
-    // colpisce un bicchiere? (solo in discesa)
-    if (this.vy > 0) {
+    // Canestro realistico: la palla deve arrivare ALTA e cadere dritta dentro
+    // il bicchiere — niente centri dopo rimbalzi o con traiettorie basse.
+    //   • bounces === 0  → nessun rimbalzo sul tavolo prima
+    //   • vy > MIN_DROP_V → sta cadendo con un arco vero (non piatta)
+    //   • margine orizzontale stretto (halfW), ingresso dall'alto sul bordo
+    if (this.vy > MIN_DROP_V && this.bounces === 0) {
       for (const cup of this.activeTargets) {
         if (!cup.alive) continue;
-        if (Math.abs(nx - cup.x) < cup.halfW + 2 && ny > cup.top - 3 && ny < cup.top + 10) {
+        if (Math.abs(nx - cup.x) < cup.halfW && ny > cup.top - 3 && ny < cup.top + 8) {
           this.finishBall(cup);
           return;
         }
@@ -499,11 +509,32 @@ export class BeerPongScene extends Phaser.Scene {
 
   private finishBall(hit: Cup | null): void {
     this.state = 'idle';
+    // Emote nel punto d'atterraggio: verde CENTRO sul bicchiere, rosso MISS dove cade
+    if (hit) this.landingLabel(hit.x, hit.top - 3, 'CENTRO', '#39d353');
+    else this.landingLabel(this.ball.x, Math.min(this.ball.y, TABLE.y), 'MISS', '#ff5555');
     this.ball.setVisible(false);
     this.ballShadow.setVisible(false);
     const resolve = this.throwResolve;
     this.throwResolve = null;
     resolve?.(hit);
+  }
+
+  /** Testo che spunta e sale dal punto d'atterraggio della palla. */
+  private landingLabel(x: number, y: number, text: string, color: string): void {
+    const t = this.add
+      .text(x, y, text, {
+        fontFamily: FONT, fontSize: '8px', color,
+        stroke: '#000000', strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setDepth(970)
+      .setScale(0.4);
+    this.tweens.add({ targets: t, scale: 1, duration: 140, ease: 'Back.easeOut' });
+    this.tweens.add({
+      targets: t, y: y - 16, alpha: 0,
+      delay: 360, duration: 560, ease: 'Quad.easeIn',
+      onComplete: () => t.destroy(),
+    });
   }
 
   private splash(x: number, y: number): void {
@@ -996,9 +1027,8 @@ export class BeerPongScene extends Phaser.Scene {
       { x: 160, baseY: 187, scaleF: 0.72 },   // back-row  (3)
       { x: 182, baseY: 187, scaleF: 0.72 },
       { x: 204, baseY: 187, scaleF: 0.72 },
-      { x: 171, baseY: 191, scaleF: 0.86 },   // mid-row   (2)
+      { x: 171, baseY: 191, scaleF: 0.86 },   // mid-row   (2) — formazione 3-2
       { x: 193, baseY: 191, scaleF: 0.86 },
-      { x: 182, baseY: 195, scaleF: 1.00 },   // front-row (1 — punta)
     ];
 
     // ── Lato DESTRO: Guglielmo/Aniceto (enemyCups) — specchio a x=286 ────────
@@ -1006,37 +1036,22 @@ export class BeerPongScene extends Phaser.Scene {
       { x: 412, baseY: 187, scaleF: 0.72 },   // back-row  (3)
       { x: 390, baseY: 187, scaleF: 0.72 },
       { x: 368, baseY: 187, scaleF: 0.72 },
-      { x: 401, baseY: 191, scaleF: 0.86 },   // mid-row   (2)
+      { x: 401, baseY: 191, scaleF: 0.86 },   // mid-row   (2) — formazione 3-2
       { x: 379, baseY: 191, scaleF: 0.86 },
-      { x: 390, baseY: 195, scaleF: 1.00 },   // front-row (1 — punta)
     ];
 
     makePyramid(leftCups, this.playerCups);
     makePyramid(rightCups, this.enemyCups);
   }
 
-  private createSling(): void {
-    // Fionda di legno piantata a terra accanto al tavolo
-    const g = this.add.graphics().setDepth(45);
-    // manico con base
-    g.fillStyle(0x6e4a2a);
-    g.fillRoundedRect(ANCHOR.x - 3, ANCHOR.y, 6, FLOOR_Y - ANCHOR.y, 2);
-    g.fillEllipse(ANCHOR.x, FLOOR_Y, 16, 4);
-    // braccia della forcella in diagonale
-    g.lineStyle(5, 0x6e4a2a, 1);
-    g.lineBetween(ANCHOR.x, ANCHOR.y + 2, ANCHOR.x - 9, ANCHOR.y - 7);
-    g.lineBetween(ANCHOR.x, ANCHOR.y + 2, ANCHOR.x + 9, ANCHOR.y - 7);
-    g.lineStyle(2, 0x8a5a32, 1); // venatura chiara
-    g.lineBetween(ANCHOR.x - 1, ANCHOR.y + 1, ANCHOR.x - 8, ANCHOR.y - 6);
-    g.lineBetween(ANCHOR.x + 1, ANCHOR.y + 1, ANCHOR.x + 8, ANCHOR.y - 6);
-
-    this.bands = this.add.graphics().setDepth(46);
+  private createBall(): void {
+    // Nessuna fionda: la pallina parte dalla mano di Umberto.
     this.ball = this.add.circle(ANCHOR.x, ANCHOR.y, 3, 0xffffff).setDepth(55).setVisible(false);
     this.ballShadow = this.add
       .ellipse(0, 0, 8, 3, 0x000000, 0.4)
       .setDepth(41)
       .setVisible(false);
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 30; i++) {
       this.dots.push(
         this.add.circle(0, 0, 1.5, 0xffffff, 0.5).setDepth(54).setVisible(false)
       );
@@ -1092,13 +1107,13 @@ export class BeerPongScene extends Phaser.Scene {
       this.messageText.setText('');
       let i = 0;
       this.time.addEvent({
-        delay: 16,
+        delay: 11,
         repeat: text.length - 1,
         callback: () => {
           i++;
           this.messageText.setText(text.slice(0, i));
           if (i % 3 === 0) AudioManager.get().playSFX(this, 'text', 0.15);
-          if (i >= text.length) this.time.delayedCall(2700, resolve);
+          if (i >= text.length) this.time.delayedCall(1500, resolve);
         },
       });
     });

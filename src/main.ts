@@ -27,6 +27,7 @@ import { BeerPongScene } from './scenes/BeerPongScene';
 import { PipScene } from './scenes/PipScene';
 import { CeceScene } from './scenes/CeceScene';
 import { EndScene } from './scenes/EndScene';
+import { PostCreditsScene } from './scenes/PostCreditsScene';
 import { MobileControlsScene } from './scenes/MobileControlsScene';
 import { SystemUIScene } from './scenes/SystemUIScene';
 
@@ -44,6 +45,7 @@ new Phaser.Game({
     PipScene,
     CeceScene,
     EndScene,
+    PostCreditsScene,
     PreviewScene,
     TestScene,
     GameScene,

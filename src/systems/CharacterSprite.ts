@@ -37,6 +37,7 @@ export const CHAR_CONFIGS: Record<string, CharConfig> = {
   aniceto: { shirtColor: 0xdd6655 },
   riccardo: { shirtColor: 0x7799ee },
   stefano: { shirtColor: 0xcccccc },
+  pietro: { shirtColor: 0x557799 },
   // personaggi secondari
   gnumma:   { shirtColor: 0x994422, skinColor: 0x5c3210, hairColor: 0x1a0e04, shortHair: true },
   alessandra: { shirtColor: 0xff99cc, bald: true, chubby: true },

@@ -333,7 +333,7 @@ export class PartyScene extends Phaser.Scene {
   preload(): void {
     loadPortraits(this, [
       'umberto', 'bubi', 'ilaria', 'trande', 'guglielmo', 'aniceto', 'cece',
-      'riccardo', 'stefano', 'lerry', 'cosimino', 'beatrice',
+      'riccardo', 'stefano', 'lerry', 'cosimino', 'beatrice', 'pietro',
     ]);
     // Metti la tua canzone in  public/assets/audio/dance.mp3
     // (o .ogg) poi setta DANCE_BPM sopra col BPM corretto
@@ -370,7 +370,7 @@ export class PartyScene extends Phaser.Scene {
 
     for (const id of [
       'umberto', 'bubi', 'ilaria', 'trande', 'guglielmo', 'aniceto', 'cece',
-      'riccardo', 'stefano', 'lerry', 'cosimino', 'beatrice',
+      'riccardo', 'stefano', 'lerry', 'cosimino', 'beatrice', 'pietro',
     ]) {
       generateSpriteTexture(this, id, CHAR_CONFIGS[id]);
     }
@@ -438,6 +438,7 @@ export class PartyScene extends Phaser.Scene {
     this.spawnPartyGuest('lerry',     185,  68, 'down');
     this.spawnPartyGuest('cosimino',  390, 155, 'left');
     this.spawnPartyGuest('beatrice',  148, 235, 'right');
+    this.spawnPartyGuest('pietro',    300, 150, 'down');   // in mezzo alla festa
     this.spawnDog('camilla', 165, 242);
 
     this.dialogue = new DialogueSystem(this);

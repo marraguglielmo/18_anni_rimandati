@@ -137,7 +137,7 @@ export class EndScene extends Phaser.Scene {
     await this.showBlock(
       'CON LA PARTECIPAZIONE DI',
       ['Lerry', 'Cosimino', 'Guglielmo', 'Aniceto', 'Trande',
-       'Cece', 'Chiara', 'Ilaria', 'Bea', 'Umberto', 'Bubi', 'Soccorritore in moto', 'Compagni di classe del liceo', 'Festaioli alla festa di Ilaria', 'Camilla', 'Fortiguerra', 'Le molise'],
+       'Cece', 'Pietro', 'Chiara',  'Ilaria', 'Stefano', 'Loretta Goggi', 'Don Biagio', 'Bea', 'Umberto', 'Bubi', 'Soccorritore in moto', 'Compagni di classe del liceo', 'Festaioli alla festa di Ilaria', 'Camilla', 'Fortiguerra', 'Le molise', 'Grest Sant\'Antonio'],
       '#222222', '#555555', T,
       8   // prime 8 righe in colonna, le successive sparpagliate per lo schermo
     );
@@ -153,7 +153,7 @@ export class EndScene extends Phaser.Scene {
 
     await this.showBlock(
       'ASSISTENZA TECNICA',
-      ['Claude.AI - Sonnet 4.6', 'Anthropic'],
+      ['Claude.AI\nSonnet 4.6 - Opus 4.8 - Fable 5', 'Anthropic'],
       '#222222', '#555555', T
     );
     await this.delay(T.blockBetweenGap);
@@ -163,7 +163,7 @@ export class EndScene extends Phaser.Scene {
       [
         'Loreta, per averci donato Cece',
         'Liceo G.Stampacchia e tutti i collaboratori scolastici',
-        'Camilla per la sua compagnia',
+        'Camilla per la sua saggezza',
         'Cosimino per le sue rrustute',
         'Ospedale Cardinale G. Panico per le degenze notturne',
         'Alessandra Marzo per i capelli',
@@ -195,9 +195,9 @@ export class EndScene extends Phaser.Scene {
     await this.fadeIn(finale, T.finaleFadeIn);
     await this.waitForClick();
 
-    // Ferma la FGM (melancholy) e ripristina BGM prima di tornare al titolo
+    // Ferma la FGM (melancholy); poi la scena post-credits (piazza 2026)
     AudioManager.get().stopFgMusic(this, T.outroFade);
-    TransitionSystem.fadeToScene(this, 'BootScene', undefined, T.outroFade);
+    TransitionSystem.fadeToScene(this, 'PostCreditsScene', undefined, T.outroFade);
   }
 
   // ─── Blocco con righe in cascata + click per avanzare ────────────────────────
@@ -234,61 +234,42 @@ export class EndScene extends Phaser.Scene {
     await this.delay(T.blockLinePause);
     startY += headerH + 8;   // margine tra titolo e righe
 
-    // Zona occupata dalla colonna (header + righe fisse) — le righe scatter la evitano
-    // Margine orizzontale extra per coprire l'header che è più largo delle righe
-    const colX1 = W / 2 - 145;
-    const colX2 = W / 2 + 145;
-    const colY1 = H / 2 - totalH / 2 - 10;
-    const colY2 = H / 2 - totalH / 2 + totalH + 12;
-
-    // ── Pre-genera gli slot scatter TUTTI prima dell'animazione ──────────────
-    // Usa una verifica a "bounding box" approssimata: testi dello stesso range
-    // di y devono avere almeno DX px di distanza orizzontale; verticalmente
-    // DY py tra i centri. Con 400 tentativi trova sempre posto per ≤12 voci.
-    const scatterCount = scatterAfter !== undefined
-      ? Math.max(0, lines.length - scatterAfter) : 0;
-    const scatterSlots: { x: number; y: number }[] = [];
-    const DX = 120;  // separazione orizzontale minima (righe simili in y)
-    const DY = 20;   // separazione verticale minima assoluta
-
-    if (scatterCount > 0) {
-      let att = 0;
-      while (scatterSlots.length < scatterCount && att < 600) {
-        att++;
-        const tx2 = Phaser.Math.Between(75, W - 75);
-        const ty2 = Phaser.Math.Between(24, H - 24);
-        const inCol =
-          tx2 > colX1 && tx2 < colX2 &&
-          ty2 > colY1 && ty2 < colY2;
-        const tooClose = scatterSlots.some(s => {
-          const dvy = Math.abs(ty2 - s.y);
-          const dvx = Math.abs(tx2 - s.x);
-          return dvy < DY || (dvy < DY * 2.5 && dvx < DX);
-        });
-        if (!inCol && !tooClose) scatterSlots.push({ x: tx2, y: ty2 });
-      }
+    // ── Zone già occupate (colonna + header): lo scatter le deve evitare ──────
+    // Usiamo bounding-box REALI: dove c'è già una scritta non ne compare un'altra.
+    const occupied: { x1: number; y1: number; x2: number; y2: number }[] = [];
+    occupied.push({
+      x1: W / 2 - 150, y1: H / 2 - totalH / 2 - 12,
+      x2: W / 2 + 150, y2: H / 2 - totalH / 2 + totalH + 14,
+    });
+    {
+      const hb = hdr.getBounds();
+      occupied.push({ x1: hb.left - 6, y1: hb.top - 6, x2: hb.right + 6, y2: hb.bottom + 6 });
     }
-    let scatterIdx = 0;
 
     // Righe in cascata
     for (let i = 0; i < lines.length; i++) {
       const scattered = scatterAfter !== undefined && i >= scatterAfter;
 
-      let tx: number, ty: number;
+      const t = this.add
+        .text(0, 0, lines[i], { fontFamily: FONT, fontSize: '5px', color: lineColor })
+        .setOrigin(0.5).setAlpha(0).setDepth(10);
+
       if (scattered) {
-        // Usa lo slot pre-generato (garantisce no-overlap)
-        const slot = scatterSlots[scatterIdx++];
-        tx = slot?.x ?? Phaser.Math.Between(75, W - 75);
-        ty = slot?.y ?? Phaser.Math.Between(24, H - 24);
+        // Misura il testo e trova un posto il cui riquadro non tocchi nulla di già piazzato.
+        const hw = t.width / 2 + 6;
+        const hh = t.height / 2 + 5;
+        const spot = this.findFreeSpot(occupied, hw, hh);
+        t.setPosition(spot.x, spot.y);
+        occupied.push({ x1: spot.x - hw, y1: spot.y - hh, x2: spot.x + hw, y2: spot.y + hh });
       } else {
-        tx = W / 2;
-        ty = startY;
+        t.setPosition(W / 2, startY);
+        occupied.push({
+          x1: W / 2 - t.width / 2 - 4, y1: startY - 7,
+          x2: W / 2 + t.width / 2 + 4, y2: startY + 7,
+        });
         startY += 11;
       }
 
-      const t = this.add
-        .text(tx, ty, lines[i], { fontFamily: FONT, fontSize: '5px', color: lineColor })
-        .setOrigin(0.5).setAlpha(0).setDepth(10);
       objs.push(t);
       this.tweens.add({ targets: t, alpha: 1, duration: T.blockFadeIn, ease: 'Sine.easeIn' });
 
@@ -303,5 +284,35 @@ export class EndScene extends Phaser.Scene {
     await this.fadeOut(objs, T.blockFadeOut);
     objs.forEach(o => o.destroy());
     await this.delay(T.blockInternalGap);
+  }
+
+  /**
+   * Restituisce una posizione (centro) il cui riquadro (hw×hh di semi-dimensioni)
+   * non si sovrappone a NESSUNA zona già occupata. Prima prova a caso (aspetto
+   * sparpagliato), poi scansiona a griglia per garantire sempre un posto libero.
+   */
+  private findFreeSpot(
+    occupied: { x1: number; y1: number; x2: number; y2: number }[],
+    hw: number,
+    hh: number,
+  ): { x: number; y: number } {
+    const fits = (x: number, y: number): boolean => {
+      const rx1 = x - hw, ry1 = y - hh, rx2 = x + hw, ry2 = y + hh;
+      return !occupied.some(o => !(rx2 < o.x1 || rx1 > o.x2 || ry2 < o.y1 || ry1 > o.y2));
+    };
+    const minX = Math.ceil(hw) + 6, maxX = Math.max(Math.ceil(hw) + 6, W - Math.ceil(hw) - 6);
+    const minY = Math.ceil(hh) + 6, maxY = Math.max(Math.ceil(hh) + 6, H - Math.ceil(hh) - 6);
+
+    for (let att = 0; att < 500; att++) {
+      const x = Phaser.Math.Between(minX, maxX);
+      const y = Phaser.Math.Between(minY, maxY);
+      if (fits(x, y)) return { x, y };
+    }
+    for (let y = minY; y <= maxY; y += 6) {
+      for (let x = minX; x <= maxX; x += 8) {
+        if (fits(x, y)) return { x, y };
+      }
+    }
+    return { x: minX, y: minY };
   }
 }

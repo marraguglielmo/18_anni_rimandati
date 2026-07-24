@@ -233,166 +233,9 @@ export class CeceScene extends Phaser.Scene {
       this.uiCam = undefined;
     }
 
-    const cx = this.ceceSprite?.x ?? W / 2;
-    const cy = this.ceceSprite?.y ?? H / 2;
-    const COLORS = [0xff3366, 0x3399ff, 0xffdd33, 0x33ff88, 0xcc44ff, 0xff8833, 0xffcc00, 0x00ccff];
-    const MARGIN = 16;
-
-    await this.delay(300);
-
-    // ── FASE 0: scintille di anticipazione attorno a Cece ─────────────
-    for (let i = 0; i < 24; i++) {
-      const g     = this.add.graphics().setDepth(440);
-      const angle = (i / 24) * Math.PI * 2;
-      const dist  = Phaser.Math.Between(8, 28);
-      g.fillStyle(COLORS[i % COLORS.length], 1);
-      g.fillRect(-1, -1, 3, 3);
-      g.setPosition(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist);
-      this.tweens.add({
-        targets: g,
-        x: cx, y: cy,
-        scaleX: 0.1, scaleY: 0.1,
-        alpha: 0,
-        duration: Phaser.Math.Between(250, 550),
-        delay: i * 18,
-        ease: 'Quad.easeIn',
-        onComplete: () => g.destroy(),
-      });
-    }
-    await this.delay(450);
-
-    // ── FASE 1a: 200 pixel colorati dai 4 bordi → Cece ────────────────
-    for (let i = 0; i < 200; i++) {
-      const g    = this.add.graphics().setDepth(450);
-      const edge = i % 4;
-      const startX =
-        edge === 0 ? Phaser.Math.Between(0, W) :
-        edge === 1 ? Phaser.Math.Between(0, W) :
-        edge === 2 ? -MARGIN :
-                      W + MARGIN;
-      const startY =
-        edge === 0 ? -MARGIN :
-        edge === 1 ?  H + MARGIN :
-                      Phaser.Math.Between(0, H);
-      const sz = Phaser.Math.Between(3, 11);
-      g.fillStyle(COLORS[i % COLORS.length], 1);
-      g.fillRect(0, 0, sz, sz);
-      g.setPosition(startX, startY);
-      this.tweens.add({
-        targets: g,
-        x: cx + Phaser.Math.Between(-5, 5),
-        y: cy + Phaser.Math.Between(-5, 5),
-        scaleX: 0.12, scaleY: 0.12,
-        alpha: 0.9,
-        duration: Phaser.Math.Between(900, 1900),
-        delay: i * 10,
-        ease: 'Quad.easeIn',
-        onComplete: () => g.destroy(),
-      });
-    }
-
-    // ── FASE 1b: 80 particelle bianche da anello attorno a Cece ───────
-    for (let i = 0; i < 80; i++) {
-      const g     = this.add.graphics().setDepth(448);
-      const angle = Math.random() * Math.PI * 2;
-      const dist  = Phaser.Math.Between(30, 100);
-      const sz    = Phaser.Math.Between(2, 6);
-      g.fillStyle(0xffffff, 0.85);
-      g.fillRect(0, 0, sz, sz);
-      g.setPosition(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist);
-      this.tweens.add({
-        targets: g,
-        x: cx + Phaser.Math.Between(-4, 4),
-        y: cy + Phaser.Math.Between(-4, 4),
-        scaleX: 0.1, scaleY: 0.1,
-        alpha: { from: 0, to: 0.8 },
-        duration: Phaser.Math.Between(700, 1500),
-        delay: i * 22 + 200,
-        ease: 'Cubic.easeIn',
-        onComplete: () => g.destroy(),
-      });
-    }
-
-    // ── FASE 1c: 40 raggi veloci dagli angoli ─────────────────────────
-    const corners: [number, number][] = [
-      [-MARGIN, -MARGIN], [W + MARGIN, -MARGIN],
-      [-MARGIN, H + MARGIN], [W + MARGIN, H + MARGIN],
-    ];
-    for (let i = 0; i < 40; i++) {
-      const g          = this.add.graphics().setDepth(452);
-      const [sx, sy]   = corners[i % 4];
-      const sz         = Phaser.Math.Between(4, 8);
-      g.fillStyle(0xffffff, 1);
-      g.fillRect(0, 0, sz, sz);
-      g.setPosition(sx, sy);
-      this.tweens.add({
-        targets: g,
-        x: cx + Phaser.Math.Between(-8, 8),
-        y: cy + Phaser.Math.Between(-8, 8),
-        scaleX: 0.08, scaleY: 0.08,
-        alpha: 0.95,
-        duration: Phaser.Math.Between(500, 1100),
-        delay: i * 28 + 100,
-        ease: 'Expo.easeIn',
-        onComplete: () => g.destroy(),
-      });
-    }
-
-    await this.delay(2700); // aspetta convergenza della maggior parte delle particelle
-
-    // ── FASE 2: 3 onde di glow pulsante al centro ─────────────────────
-    for (let wave = 0; wave < 3; wave++) {
-      const glow  = this.add.graphics().setDepth(455);
-      const state = { r: 4, a: 0.95 };
-      this.tweens.add({
-        targets: state,
-        r: 28 + wave * 14,
-        a: 0,
-        duration: 380,
-        ease: 'Sine.easeOut',
-        onUpdate: () => {
-          glow.clear();
-          glow.fillStyle(0xffffff, state.a);
-          glow.fillCircle(cx, cy, state.r);
-        },
-        onComplete: () => glow.destroy(),
-      });
-      await this.delay(180);
-    }
-    await this.delay(180);
-
-    // ── FASE 3: 5 anelli di flash rapidi ──────────────────────────────
-    for (let r = 6; r <= 30; r += 6) {
-      const ring = this.add.graphics().setDepth(460);
-      ring.fillStyle(0xffffff, 1);
-      ring.fillCircle(cx, cy, r);
-      await this.delay(55);
-      ring.destroy();
-    }
-    await this.delay(40);
-
-    // ── FASE 4: onda d'urto bianca esplosiva ──────────────────────────
-    const shockwave = this.add.graphics().setDepth(470);
-    const dummy     = { r: 0 };
-    await new Promise<void>(resolve => {
-      this.tweens.add({
-        targets: dummy,
-        r: 420,
-        duration: 750,
-        ease: 'Quad.easeIn',
-        onUpdate: () => {
-          shockwave.clear();
-          shockwave.fillStyle(0xffffff, 1);
-          shockwave.fillCircle(cx, cy, dummy.r);
-        },
-        onComplete: () => {
-          shockwave.clear();
-          shockwave.fillStyle(0xffffff, 1);
-          shockwave.fillRect(-60, -60, W + 120, H + 120);
-          resolve();
-        },
-      });
-    });
+    const cece = this.ceceSprite;
+    // Stessa animazione (potenziata) usata anche nel post-credits.
+    await TransitionSystem.implodeToWhite(this, cece?.x ?? W / 2, cece?.y ?? H / 2);
 
     await this.delay(180);
     this.scene.start('EndScene');
@@ -419,17 +262,19 @@ export class CeceScene extends Phaser.Scene {
     // Valori scelti così che i piedi poggino sull'asfalto (strada y≥200), con
     // gradiente prospettico: fondo più in alto/piccolo, primo piano più in basso.
     type WD = { id: string; startX: number; y: number; scaleF: number; dur: number };
+    // Camminano gli AMICI VERI della festa (non comparse anonime): così il
+    // gruppo che arriva a casa di Cece è lo stesso che era da Ilaria.
     const defs: WD[] = [
       // fondo → piedi ≈ 210
-      { id: 'ext0', startX: -10,  y: 198, scaleF: 0.72, dur: 5200 },
-      { id: 'ext1', startX: -45,  y: 199, scaleF: 0.72, dur: 5400 },
-      { id: 'ext2', startX: -80,  y: 197, scaleF: 0.72, dur: 5000 },
-      { id: 'ext3', startX:-115,  y: 198, scaleF: 0.72, dur: 5300 },
+      { id: 'riccardo', startX: -10,  y: 198, scaleF: 0.72, dur: 5200 },
+      { id: 'stefano',  startX: -45,  y: 199, scaleF: 0.72, dur: 5400 },
+      { id: 'lerry',    startX: -80,  y: 197, scaleF: 0.72, dur: 5000 },
+      { id: 'cosimino', startX:-115,  y: 198, scaleF: 0.72, dur: 5300 },
       // mezzo → piedi ≈ 222
       { id: 'guglielmo', startX: -18, y: 206, scaleF: 0.86, dur: 4600 },
       { id: 'aniceto',   startX: -55, y: 208, scaleF: 0.86, dur: 4800 },
-      { id: 'ext4',      startX: -88, y: 206, scaleF: 0.86, dur: 4700 },
-      { id: 'ext5',      startX:-125, y: 207, scaleF: 0.86, dur: 4900 },
+      { id: 'ilaria',    startX: -88, y: 206, scaleF: 0.86, dur: 4700 },
+      { id: 'beatrice',  startX:-125, y: 207, scaleF: 0.86, dur: 4900 },
       // primo piano — festeggiati + Cece in testa → piedi ≈ 234
       { id: 'cece',    startX:  10, y: 217, scaleF: 1.0, dur: 3800 },
       { id: 'umberto', startX: -25, y: 218, scaleF: 1.0, dur: 4200 },
@@ -538,11 +383,22 @@ export class CeceScene extends Phaser.Scene {
       ['guglielmo', 82,  195, 0.86],
       ['aniceto',  118,  196, 0.86],
     ];
+    // Gli amici della festa arrivano INSIEME al gruppo (retro, un filo più su
+    // e piccoli): così chi ha camminato verso Cece è davvero tutto qui fuori.
+    const friendDefs: [string, number, number][] = [
+      ['ilaria',   50,  190], ['riccardo', 95,  188], ['stefano',  150, 191],
+      ['lerry',    195, 189], ['cosimino', 300, 190], ['beatrice', 352, 188],
+    ];
     const sprites: Record<string, Phaser.GameObjects.Sprite> = {};
     for (const [id, x, y, sf] of groupDefs) {
       sprites[id] = this.add.sprite(x - 60, y, `char-${id}`, 1)
         .setScale(CHAR_SCALE * sf).setDepth(y);
       sprites[id].play(`${id}-walk-right`);  // gambe in movimento durante l'arrivo
+    }
+    for (const [id, x, y] of friendDefs) {
+      sprites[id] = this.add.sprite(x - 60, y, `char-${id}`, 1)
+        .setScale(CHAR_SCALE * 0.78).setDepth(y);
+      sprites[id].play(`${id}-walk-right`);
     }
     await this.tweenP({ targets: Object.values(sprites), x: `+=55`, duration: 1200, ease: 'Quad.easeOut' });
 
@@ -569,9 +425,24 @@ export class CeceScene extends Phaser.Scene {
     ));
     ['umberto', 'bubi', 'trande'].forEach(id => sprites[id].destroy());
 
-    // Cece + gli altri entrano in casa UNO ALLA VOLTA, in fila: la porta si apre
-    // una volta, i tre entrano in sequenza, poi si richiude (all'incontrario).
+    // Tutti gli altri entrano in casa mentre il trio è alla pipì.
     await door.open();
+    // Prima gli amici della festa (gruppo, rapido, verso la porta)
+    const friendIds = ['ilaria', 'riccardo', 'stefano', 'lerry', 'cosimino', 'beatrice'];
+    await Promise.all(friendIds.map((id, i) => (async () => {
+      await this.delay(i * 120);
+      const s = sprites[id];
+      s.setDepth(260 + i);
+      s.play(`${id}-walk-${s.x > DOOR_CX ? 'left' : 'right'}`);
+      await this.tweenP({ targets: s, x: DOOR_CX, duration: 500, ease: 'Linear' });
+      s.play(`${id}-walk-up`);
+      await this.tweenP({
+        targets: s, y: 176, scale: CHAR_SCALE * 0.7, alpha: 0,
+        duration: 300, ease: 'Quad.easeIn',
+      });
+      s.destroy();
+    })()));
+    // Poi Cece con i complici (Guglielmo e Aniceto) uno alla volta, in fila
     await this.enterDoorInLine(sprites, ['cece', 'guglielmo', 'aniceto'], DOOR_CX);
     await door.close();
 
@@ -668,7 +539,7 @@ export class CeceScene extends Phaser.Scene {
     // LATI (y=88, depth=88 > cake 80) — cosimino e riccardo ai lati.
     // ──────────────────────────────────────────────────────────────────
     const sideRow: [string, number][] = [
-      ['cosimino', 36], ['riccardo', 444],
+      ['cosimino', 36], ['stefano', 64], ['riccardo', 444],
     ];
     for (const [id, x] of sideRow) {
       const s = this.add.sprite(x, 88, `char-${id}`, 1)

@@ -45,6 +45,162 @@ export class TransitionSystem {
     });
   }
 
+  // ------------------------------------------------------- implosione bianca
+
+  /**
+   * Implosione su un punto (di solito Cece): particelle colorate dai bordi che
+   * convergono, anelli colorati pulsanti, raggi rotanti, onde di glow, anelli
+   * flash e infine un'onda d'urto bianca che riempie lo schermo (che RESTA
+   * bianco). Il chiamante decide cosa fare dopo (scritta, cambio scena...).
+   */
+  static async implodeToWhite(scene: Phaser.Scene, cx: number, cy: number): Promise<void> {
+    const delay = (ms: number): Promise<void> =>
+      new Promise(r => scene.time.delayedCall(ms, () => r()));
+    const COLORS = [0xff3366, 0x3399ff, 0xffdd33, 0x33ff88, 0xcc44ff, 0xff8833, 0xffcc00, 0x00ccff];
+    const MARGIN = 16;
+    const D = 9000;
+
+    await delay(300);
+
+    // ── Fase 0: scintille di anticipazione attorno al centro ──────────────
+    for (let i = 0; i < 28; i++) {
+      const g = scene.add.graphics().setDepth(D);
+      const a = (i / 28) * Math.PI * 2;
+      const dist = Phaser.Math.Between(8, 30);
+      g.fillStyle(COLORS[i % COLORS.length], 1); g.fillRect(-1, -1, 3, 3);
+      g.setPosition(cx + Math.cos(a) * dist, cy + Math.sin(a) * dist);
+      scene.tweens.add({
+        targets: g, x: cx, y: cy, scaleX: 0.1, scaleY: 0.1, alpha: 0,
+        duration: Phaser.Math.Between(260, 560), delay: i * 16,
+        ease: 'Quad.easeIn', onComplete: () => g.destroy(),
+      });
+    }
+    await delay(520);
+
+    // ── Fase 1a: pixel colorati dai 4 bordi → centro ──────────────────────
+    for (let i = 0; i < 220; i++) {
+      const g = scene.add.graphics().setDepth(D + 2);
+      const edge = i % 4;
+      const sx = edge === 2 ? -MARGIN : edge === 3 ? W + MARGIN : Phaser.Math.Between(0, W);
+      const sy = edge === 0 ? -MARGIN : edge === 1 ? H + MARGIN : Phaser.Math.Between(0, H);
+      const sz = Phaser.Math.Between(3, 11);
+      g.fillStyle(COLORS[i % COLORS.length], 1); g.fillRect(0, 0, sz, sz);
+      g.setPosition(sx, sy);
+      scene.tweens.add({
+        targets: g, x: cx + Phaser.Math.Between(-5, 5), y: cy + Phaser.Math.Between(-5, 5),
+        scaleX: 0.12, scaleY: 0.12, alpha: 0.9,
+        duration: Phaser.Math.Between(950, 2000), delay: i * 9,
+        ease: 'Quad.easeIn', onComplete: () => g.destroy(),
+      });
+    }
+    // ── Fase 1b: particelle bianche da un anello attorno al centro ────────
+    for (let i = 0; i < 90; i++) {
+      const g = scene.add.graphics().setDepth(D + 1);
+      const a = Math.random() * Math.PI * 2;
+      const dist = Phaser.Math.Between(30, 110);
+      const sz = Phaser.Math.Between(2, 6);
+      g.fillStyle(0xffffff, 0.85); g.fillRect(0, 0, sz, sz);
+      g.setPosition(cx + Math.cos(a) * dist, cy + Math.sin(a) * dist);
+      scene.tweens.add({
+        targets: g, x: cx + Phaser.Math.Between(-4, 4), y: cy + Phaser.Math.Between(-4, 4),
+        scaleX: 0.1, scaleY: 0.1, alpha: { from: 0, to: 0.8 },
+        duration: Phaser.Math.Between(750, 1600), delay: i * 20 + 200,
+        ease: 'Cubic.easeIn', onComplete: () => g.destroy(),
+      });
+    }
+    // ── Fase 1c: raggi veloci dai 4 angoli ────────────────────────────────
+    const corners: [number, number][] = [
+      [-MARGIN, -MARGIN], [W + MARGIN, -MARGIN], [-MARGIN, H + MARGIN], [W + MARGIN, H + MARGIN],
+    ];
+    for (let i = 0; i < 44; i++) {
+      const g = scene.add.graphics().setDepth(D + 3);
+      const [sx, sy] = corners[i % 4];
+      const sz = Phaser.Math.Between(4, 8);
+      g.fillStyle(0xffffff, 1); g.fillRect(0, 0, sz, sz); g.setPosition(sx, sy);
+      scene.tweens.add({
+        targets: g, x: cx + Phaser.Math.Between(-8, 8), y: cy + Phaser.Math.Between(-8, 8),
+        scaleX: 0.08, scaleY: 0.08, alpha: 0.95,
+        duration: Phaser.Math.Between(520, 1150), delay: i * 26 + 100,
+        ease: 'Expo.easeIn', onComplete: () => g.destroy(),
+      });
+    }
+
+    // ── Fase 1.5 (dettaglio): anelli colorati che pulsano verso l'esterno ──
+    for (let ring = 0; ring < 4; ring++) {
+      scene.time.delayedCall(500 + ring * 560, () => {
+        const rg = scene.add.graphics().setDepth(D + 1);
+        const st = { r: 6, a: 0.6 };
+        scene.tweens.add({
+          targets: st, r: 62, a: 0, duration: 720, ease: 'Sine.easeOut',
+          onUpdate: () => {
+            rg.clear();
+            rg.lineStyle(2, COLORS[(ring * 2) % COLORS.length], st.a);
+            rg.strokeCircle(cx, cy, st.r);
+          },
+          onComplete: () => rg.destroy(),
+        });
+      });
+    }
+
+    // ── Fase 1.6 (dettaglio): raggi rotanti colorati che si accorciano ────
+    const rays = scene.add.graphics().setDepth(D);
+    const rayState = { t: 0 };
+    scene.tweens.add({
+      targets: rayState, t: 1, duration: 3200, ease: 'Sine.easeIn',
+      onUpdate: () => {
+        rays.clear();
+        const ang0 = rayState.t * Math.PI * 4;
+        const len = 95 * (1 - rayState.t);
+        for (let k = 0; k < 8; k++) {
+          const a = ang0 + (k / 8) * Math.PI * 2;
+          rays.lineStyle(1, COLORS[k % COLORS.length], 0.35 * (1 - rayState.t));
+          rays.lineBetween(cx, cy, cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+        }
+      },
+      onComplete: () => rays.destroy(),
+    });
+
+    await delay(3100);
+
+    // ── Fase 2: 4 onde di glow pulsante al centro ─────────────────────────
+    for (let wave = 0; wave < 4; wave++) {
+      const glow = scene.add.graphics().setDepth(D + 5);
+      const st = { r: 4, a: 0.95 };
+      scene.tweens.add({
+        targets: st, r: 26 + wave * 14, a: 0, duration: 380, ease: 'Sine.easeOut',
+        onUpdate: () => { glow.clear(); glow.fillStyle(0xffffff, st.a); glow.fillCircle(cx, cy, st.r); },
+        onComplete: () => glow.destroy(),
+      });
+      await delay(170);
+    }
+    await delay(150);
+
+    // ── Fase 3: micro-shake + anelli flash rapidi ─────────────────────────
+    scene.cameras.main.shake(260, 0.006);
+    for (let r = 6; r <= 36; r += 6) {
+      const ring = scene.add.graphics().setDepth(D + 6);
+      ring.fillStyle(0xffffff, 1); ring.fillCircle(cx, cy, r);
+      await delay(52);
+      ring.destroy();
+    }
+    await delay(40);
+
+    // ── Fase 4: onda d'urto bianca a schermo pieno (RESTA bianca) ─────────
+    const shock = scene.add.graphics().setDepth(D + 7);
+    await new Promise<void>(resolve => {
+      const d = { r: 0 };
+      scene.tweens.add({
+        targets: d, r: 460, duration: 780, ease: 'Quad.easeIn',
+        onUpdate: () => { shock.clear(); shock.fillStyle(0xffffff, 1); shock.fillCircle(cx, cy, d.r); },
+        onComplete: () => {
+          shock.clear(); shock.fillStyle(0xffffff, 1);
+          shock.fillRect(-80, -80, W + 160, H + 160);
+          resolve();
+        },
+      });
+    });
+  }
+
   // --------------------------------------------- varco spazio-temporale
 
   /**

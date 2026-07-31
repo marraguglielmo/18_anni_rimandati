@@ -76,6 +76,23 @@ const CECE_INTRO_LINES: DialogueLine[] = [
   { speaker: 'cece', text: 'Sono il vostro supplente! Sedetevi tutti!' },
 ];
 
+// Chiacchiere brevi dei compagni di sfondo (nuvolette casuali).
+const CLASS_CHATTER = [
+  '...', 'oh raga', 'hai visto?', 'ma è vero??', 'cittu!', 'ahahah',
+  'e mo?', 'che palle', 'occhio al prof', 'te na penna?',
+];
+
+const ZENZOLA_LINES: DialogueLine[] = [
+  { speaker: 'zenzola', text: 'Oh umberto! Tieni le sigarette?' },
+  { speaker: 'bubi', text: 'Zenzola, mo no... aggiu de sciare te lu prof.' },
+];
+
+const SANAPO_LINES: DialogueLine[] = [
+  { speaker: 'sanapo', text: 'Gabriele! andiamo in bagno a fare un musically!' },
+  { speaker: 'bubi', text: 'Si porcu diu, sciamu...' },
+  { speaker: 'bubi', text: 'Chiamo Umberto.' },
+];
+
 const LESSON_LINES: DialogueLine[] = [
   { speaker: 'cece', text: 'Lezione di oggi: anatomia della donna' },
   { speaker: 'bubi', text: 'Ma ci ne sai cece... mancu mammata te vole' },
@@ -259,6 +276,13 @@ export class AulaScene extends Phaser.Scene {
   private students: { sprite: Phaser.GameObjects.Sprite; id: string }[] = [];
   private followers: { sprite: Phaser.GameObjects.Sprite; id: string; facing: string }[] = [];
   private trandeTalked = false;
+  private zenzola!: Phaser.GameObjects.Sprite;
+  private sanapo!: Phaser.GameObjects.Sprite;
+  private zenzolaDone = false;
+  private sanapoDone = false;
+  private classTimers: Phaser.Time.TimerEvent[] = [];
+  private classActive = false;   // i compagni si muovono solo quando il player ha il controllo
+  private classStopped = false;  // stop definitivo (lezione iniziata)
   private cutscene = false;
 
   // Quest HUD
@@ -284,6 +308,11 @@ export class AulaScene extends Phaser.Scene {
   create(): void {
     this.interactables = [];
     this.trandeTalked = false;
+    this.zenzolaDone = false;
+    this.sanapoDone = false;
+    this.classTimers = [];
+    this.classActive = false;
+    this.classStopped = false;
     this.pendingObstacles = [];
     this.staticSprites = [];
     this.students = [];
@@ -298,7 +327,7 @@ export class AulaScene extends Phaser.Scene {
 
     this.drawMap();
 
-    for (const id of ['bubi', 'umberto', 'chiara', 'trande', 'cece']) {
+    for (const id of ['bubi', 'umberto', 'chiara', 'trande', 'cece', 'zenzola', 'sanapo']) {
       generateSpriteTexture(this, id, CHAR_CONFIGS[id]);
     }
     STUDENT_SHIRTS.forEach((color, i) => {
@@ -316,6 +345,7 @@ export class AulaScene extends Phaser.Scene {
       s.setDepth(y);
       this.makeStatic(s);
       this.students.push({ sprite: s, id });
+      this.startStudentLife(s, id, x, y);
     });
 
     this.umberto = this.spawnFollower('umberto', 200, 270, 'right');
@@ -324,6 +354,11 @@ export class AulaScene extends Phaser.Scene {
     this.trande = this.spawnNamed('trande', 440, 290, 'left');
     this.interactables.push({ id: 'trande', sprite: this.trande });
     this.questHUD = new QuestHUD(this, WORLD_W / 2 + UI_OFF_X, 50 + UI_OFF_Y).addMarker();
+
+    // Due compagni lungo il tragitto verso Trande: fermano Bubi con un dialogo
+    // automatico. Prima Zenzola, poco dopo Emanuele Sanapo.
+    this.zenzola = this.spawnNamed('zenzola', 300, 246, 'left');
+    this.sanapo = this.spawnNamed('sanapo', 380, 262, 'left');
 
     this.dialogue = new DialogueSystem(this);
     this.player = new PlayerController(this, 'bubi', 240, 290, this.dialogue);
@@ -404,6 +439,7 @@ export class AulaScene extends Phaser.Scene {
       onComplete: () => {
         this.cutscene = false;          // i follower riprendono a seguire Bubi
         this.player.locked = false;
+        this.classActive = true;        // ora i compagni prendono vita
         this.questHUD.show('Parla con Trande');
         this.questHUD.moveMarker(this.trande.x, this.trande.y);
       },
@@ -705,6 +741,121 @@ export class AulaScene extends Phaser.Scene {
     this.player.update(this.trandeTalked ? [] : this.interactables);
     this.player.sprite.setDepth(this.player.sprite.y);
     if (!this.cutscene) this.updateFollowers();
+    this.checkNpcTriggers();
+  }
+
+  /** Zenzola e poi Sanapo fermano Bubi al passaggio: dialogo automatico. */
+  private checkNpcTriggers(): void {
+    if (this.cutscene || this.player.locked || this.dialogue.isActive || this.trandeTalked) return;
+    const p = this.player.sprite;
+    if (!this.zenzolaDone &&
+        Phaser.Math.Distance.Between(p.x, p.y, this.zenzola.x, this.zenzola.y) < 30) {
+      this.zenzolaDone = true;
+      this.startNpcTalk(ZENZOLA_LINES);
+    } else if (this.zenzolaDone && !this.sanapoDone &&
+        Phaser.Math.Distance.Between(p.x, p.y, this.sanapo.x, this.sanapo.y) < 30) {
+      this.sanapoDone = true;
+      this.startNpcTalk(SANAPO_LINES);
+    }
+  }
+
+  private startNpcTalk(lines: DialogueLine[]): void {
+    this.player.locked = true;
+    this.dialogue.start({
+      lines,
+      onComplete: () => { this.player.locked = false; },
+    });
+  }
+
+  /** Ferma il movimento dei compagni (quando la lezione inizia). */
+  private stopClassAnimation(): void {
+    this.classStopped = true;
+    this.classActive = false;
+    for (const t of this.classTimers) t.remove();
+    this.classTimers = [];
+    for (const st of this.students) this.tweens.killTweensOf(st.sprite);
+  }
+
+  /** Compagno di sfondo che "vive": si avvicina ai vicini, si gira, chiacchiera. */
+  private startStudentLife(s: Phaser.GameObjects.Sprite, id: string, hx: number, hy: number): void {
+    const dirOf = (dx: number, dy: number): string =>
+      Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down');
+
+    const schedule = (): void => {
+      this.classTimers.push(this.time.delayedCall(Phaser.Math.Between(1400, 3200), act));
+    };
+
+    const shadow = this.shadows.get(s);
+    const act = (): void => {
+      if (this.classStopped || !s.active) return;     // lezione iniziata: stop definitivo
+      if (!this.classActive) { schedule(); return; }  // arrivo/cutscene: in pausa, riprova dopo
+      const roll = Math.random();
+      const other = this.nearestStudentTo(s);
+
+      if (roll < 0.45) {
+        // Si avvicina un po' a un compagno (o gironzola vicino al posto)
+        let tx: number, ty: number;
+        if (other) {
+          const dx = other.x - s.x, dy = other.y - s.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const step = Math.max(0, Math.min(d - 16, 14));   // fermati a ~16px dal vicino
+          tx = s.x + (dx / d) * step;
+          ty = s.y + (dy / d) * step;
+        } else {
+          tx = hx + Phaser.Math.Between(-12, 12);
+          ty = hy + Phaser.Math.Between(-6, 6);
+        }
+        tx = Phaser.Math.Clamp(tx, hx - 22, hx + 22);
+        ty = Phaser.Math.Clamp(ty, hy - 12, hy + 12);
+        const dir = dirOf(tx - s.x, ty - s.y);
+        s.play(`${id}-walk-${dir}`, true);
+        this.tweens.add({
+          targets: s, x: tx, y: ty,
+          duration: Phaser.Math.Between(500, 950), ease: 'Sine.easeInOut',
+          onUpdate: () => {
+            s.setDepth(s.y);
+            shadow?.setPosition(s.x, s.y + SHADOW_OFFSET_Y).setDepth(s.y - 1);  // l'ombra segue
+          },
+          onComplete: () => { s.play(`${id}-idle-${dir}`, true); schedule(); },
+        });
+        return;   // il reschedule avviene a fine camminata
+      }
+
+      if (roll < 0.78 && other) {
+        // Si gira verso il vicino e chiacchiera
+        s.play(`${id}-idle-${dirOf(other.x - s.x, other.y - s.y)}`, true);
+        this.studentBubble(s);
+      } else {
+        s.play(`${id}-idle-${Phaser.Utils.Array.GetRandom(['down', 'left', 'right', 'up'])}`, true);
+      }
+      schedule();
+    };
+
+    schedule();
+  }
+
+  /** Sprite del compagno più vicino (diverso da s), o null. */
+  private nearestStudentTo(s: Phaser.GameObjects.Sprite): Phaser.GameObjects.Sprite | null {
+    let best: Phaser.GameObjects.Sprite | null = null;
+    let bestD = Infinity;
+    for (const st of this.students) {
+      if (st.sprite === s || !st.sprite.active) continue;
+      const d = Phaser.Math.Distance.Between(s.x, s.y, st.sprite.x, st.sprite.y);
+      if (d < bestD) { bestD = d; best = st.sprite; }
+    }
+    return best;
+  }
+
+  /** Nuvoletta di chiacchiera sopra un compagno. */
+  private studentBubble(s: Phaser.GameObjects.Sprite): void {
+    const t = this.add.text(s.x, s.y - 15, Phaser.Utils.Array.GetRandom(CLASS_CHATTER), {
+      fontFamily: FONT, fontSize: '4px', color: '#222222', align: 'center',
+      backgroundColor: '#ffffff', padding: { x: 3, y: 2 },
+    }).setOrigin(0.5, 1).setDepth(s.y + 400).setAlpha(0);
+    this.tweens.add({ targets: t, alpha: 1, duration: 150 });
+    this.time.delayedCall(1200, () =>
+      this.tweens.add({ targets: t, alpha: 0, duration: 250, onComplete: () => t.destroy() }),
+    );
   }
 
   private updateFollowers(): void {
@@ -758,6 +909,7 @@ export class AulaScene extends Phaser.Scene {
   private async runCeceSequence(): Promise<void> {
     this.player.locked = true;
     this.cutscene = true;
+    this.stopClassAnimation();   // i compagni smettono di muoversi (vanno ai banchi)
 
     // Cece entra dalla porta sud e raggiunge la cattedra
     this.cece = this.add.sprite(240, WORLD_H + 24, 'char-cece', 1).setScale(CHAR_SCALE);
@@ -807,7 +959,12 @@ export class AulaScene extends Phaser.Scene {
   // ─── Chi Vuole Essere Milionario ──────────────────────────────────────────
 
   private async playMillionaireGame(): Promise<void> {
-    await this.runDialogue(MG_INTRO_LINES);
+    // Intro fino a "Bubi, siediti di fronte a me."
+    await this.runDialogue(MG_INTRO_LINES.slice(0, 4));
+    // Bubi si alza dal banco e va davanti a Cece (alla cattedra)
+    await this.walkTo(this.player.sprite, 'bubi', 240, this.cece.y + 34);
+    // Resto dell'intro ("Benvenuti a CHI VUOLE ESSERE MILIONARIO?")
+    await this.runDialogue(MG_INTRO_LINES.slice(4));
 
     // Blocca la camera sul centro (così l'UI in screen-space funziona bene)
     this.cameras.main.stopFollow();
@@ -933,14 +1090,12 @@ export class AulaScene extends Phaser.Scene {
             { speaker: 'bubi', text: 'Non mi stupisce.' },
           ];
 
+    // Due fili tenuti SEPARATI per non accavallarli:
+    //   1) chiusura da game-show con l'annuncio del montepremi
+    //   2) chiusura della lezione + gancio al teletrasporto (frase continua)
     await this.runDialogue([
-      MG_OUTRO_LINES[0], // E con questo... la lezione è conclusa!
-      MG_OUTRO_LINES[1], // Non ci hai insegnato niente.
-      MG_OUTRO_LINES[2], // Ti sbagli. Ora sai un sacco di cose...
-      ...prizeLines,
-      MG_OUTRO_LINES[3], // Tranne una cosa che sto preparando per voi...
-      MG_OUTRO_LINES[4], // Adesso non è il momento di parlarne...
-      MG_OUTRO_LINES[5], // Cece con chi cazzo stai parlando??
+      ...prizeLines,        // "...e Bubi porta a casa X!" → reazione di Bubi
+      ...MG_OUTRO_LINES,    // "la lezione è conclusa" ... "ora sai un sacco di cose... tranne una cosa..." ... "con chi stai parlando?"
     ]);
   }
 
@@ -1234,6 +1389,9 @@ export class AulaScene extends Phaser.Scene {
       bg.clear();
       if (i === qData.correct) {
         this.drawMgBtn(bg, BTN_W, BTN_H, 'correct');
+        // Suono positivo solo se il giocatore ha davvero indovinato
+        // (simmetrico al suono negativo della risposta sbagliata).
+        if (selected === qData.correct) AudioManager.get().playSFX(this, 'coin', 0.6);
         // Particelle sul bottone corretto (posizione canvas = logica + offset)
         this.ensureFxTexture();
         const [px, py] = positions[i];

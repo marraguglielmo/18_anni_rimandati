@@ -31,6 +31,8 @@ export const SPEAKER_COLORS: Record<string, string> = {
   riccardo: '#7799ee',
   stefano: '#cccccc',
   pietro: '#557799',
+  zenzola: '#e0a050',
+  sanapo: '#40b0b0',
   soccorritore: '#aaccff',
   lerry:    '#ff9933',
   cosimino: '#bbbb77',

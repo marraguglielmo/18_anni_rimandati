@@ -39,6 +39,7 @@ const AUDIO_FILES: [string, string][] = [
   ['hit',      'assets/audio/hit.wav'],
   ['step',     'assets/audio/step.wav'],
   ['teleport', 'assets/audio/teleport.wav'],
+  ['warp',     'assets/audio/warp.wav'],
   ['scontro',  'assets/audio/scontro.wav'],
   ['fanfare',  'assets/audio/fanfare.mp3'],
 ];

@@ -11,6 +11,11 @@ export interface CharConfig {
   shortHair?: boolean;
   /** Testa completamente calva: nessun capello disegnato. */
   bald?: boolean;
+  /**
+   * Se true, camminando/guardando verso l'ALTO mostra la nuca scura (di spalle)
+   * invece del volto frontale. Utile per entrate "di schiena" (es. Cece).
+   */
+  backHead?: boolean;
   /** Fisico rotondetto: busto e gambe più larghi, pancione visibile. */
   chubby?: boolean;
   /** Zoom sul volto della foto (1 = crop quadrato pieno, 1.4 = stretto sul viso). */
@@ -29,7 +34,7 @@ export interface CharConfig {
 export const CHAR_CONFIGS: Record<string, CharConfig> = {
   umberto: { shirtColor: 0x6ab0ff, faceZoom: 1.0 },
   bubi: { shirtColor: 0x88dd66 },
-  cece: { shirtColor: 0xffdd44 },
+  cece: { shirtColor: 0xffdd44, backHead: true },
   chiara: { shirtColor: 0xff88cc },
   trande: { shirtColor: 0xffaa55 },
   ilaria: { shirtColor: 0xcc88ff },
@@ -38,6 +43,8 @@ export const CHAR_CONFIGS: Record<string, CharConfig> = {
   riccardo: { shirtColor: 0x7799ee },
   stefano: { shirtColor: 0xcccccc },
   pietro: { shirtColor: 0x557799 },
+  zenzola: { shirtColor: 0xd08a3a, shortHair: true },
+  sanapo: { shirtColor: 0x3aa0a0 },
   // personaggi secondari
   gnumma:   { shirtColor: 0x994422, skinColor: 0x5c3210, hairColor: 0x1a0e04, shortHair: true },
   alessandra: { shirtColor: 0xff99cc, bald: true, chubby: true },
@@ -626,9 +633,13 @@ function drawOverworldHead(
   // (i capelli veri sono già nella foto). Leggermente più in basso,
   // sovrapposta al colletto: non "appoggiata" sul collo.
   if (faceImg && faceImg.width > 0) {
-    // Testa grande quasi quanto il frame (chibi Gen 1: ~60% dell'altezza).
-    // Il volto resta SEMPRE frontale, anche camminando verso l'alto
-    // (niente retro-testa: scelta di stile).
+    // Di norma il volto resta SEMPRE frontale, anche salendo (scelta di stile).
+    // Se però backHead è attivo (es. Cece), verso l'alto si vede la NUCA scura
+    // (di spalle) — poi girandosi verso il basso torna il volto.
+    if (cfg.backHead && dir === 'up') {
+      drawPhotoFace(ctx, faceImg, 'down', 1, y, 22, 19, 5, cfg, 1); // silhouette scura
+      return;
+    }
     drawPhotoFace(ctx, faceImg, dir === 'up' ? 'down' : dir, 1, y, 22, 19, 5, cfg);
     return;
   }

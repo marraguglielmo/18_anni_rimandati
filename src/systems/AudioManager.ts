@@ -254,4 +254,13 @@ export class AudioManager {
     if (!scene.cache.audio.exists(key)) return;
     scene.sound.play(key, { volume });
   }
+
+  /**
+   * Cambia la velocità di riproduzione della traccia FGM in corso.
+   * @param rate 1 = normale, 2 = doppia velocità (anche il pitch sale).
+   */
+  setFgMusicRate(rate: number): void {
+    const m = this.fgMusic as unknown as { isPlaying?: boolean; setRate?: (r: number) => void };
+    if (m && m.isPlaying && m.setRate) m.setRate(rate);
+  }
 }

@@ -535,7 +535,7 @@ export class TransitionSystem {
     haloRing.destroy();
 
     // ── 6. DETONAZIONE: triplo shockwave + esplosione + flash ─────────────
-    AudioManager.get().playSFX(scene, 'hit', 0.6);
+    AudioManager.get().playSFX(scene, 'warp', 0.85);   // burst magico (non un impatto)
     cam.shake(320, 0.014);
     cam.zoomTo(baseZoom, 240, 'Quad.easeOut');
     shockwave(0, 520, 0xffffff, 15);

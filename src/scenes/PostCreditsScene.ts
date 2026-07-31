@@ -177,7 +177,7 @@ export class PostCreditsScene extends Phaser.Scene {
           shadow.setPosition(cece.x, cece.y + SHADOW_OFFSET_Y).setDepth(cece.y - 1);
           label.setPosition(cece.x, cece.y - 20).setDepth(cece.y + 1);
         },
-        onComplete: () => { cece.play('cece-idle-up'); resolve(); },
+        onComplete: () => { cece.play('cece-idle-down'); resolve(); },
       });
     });
   }

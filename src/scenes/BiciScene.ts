@@ -116,7 +116,7 @@ const PLAN_LINES: DialogueLine[] = [
   { speaker: 'ilaria', text: 'Vabe scialla ce li prende Lerry.' },
   { speaker: 'ilaria', text: 'Per la musica invece?' },
   { speaker: 'bubi', text: 'Playlist pronta da tre settimane.' },
-  { speaker: 'trande', text: 'Stasera al beer pong vi distruggo tutti.' },
+  { speaker: 'trande', text: 'Dai ca sta sira ne scasciamu.' },
   { speaker: 'bubi', text: 'Ah sì? ULTIMO DA ILARIA È FROCIO!' },
 ];
 
@@ -598,7 +598,10 @@ export class BiciScene extends Phaser.Scene {
           (Phaser.Display.Color.HSVToRGB(Math.random(), 0.75, 1) as Phaser.Display.Color).color
         );
       }
-      if (this.mgStarT <= 0) this.trande.sprite.clearTint();
+      if (this.mgStarT <= 0) {
+        this.trande.sprite.clearTint();
+        AudioManager.get().setFgMusicRate(1);   // fine stella: musica normale
+      }
     }
     // Velocità effettiva (2x con la stella) + magnete potenziato
     const sp = starActive ? this.scrollSpeed * 2 : this.scrollSpeed;
@@ -778,6 +781,7 @@ export class BiciScene extends Phaser.Scene {
   /** Super Stella stile Mario: 5s invincibile, velocità 2x, sfonda gli ostacoli. */
   private activateStar(): void {
     this.mgStarT = STAR_DURATION_S;
+    AudioManager.get().setFgMusicRate(2);   // musica a x2 finché dura la stella
     const c = this.trande.container;
     Juice.popText(this, c.x, c.y - 38, 'SUPER STELLA!', '#ffdd44', 7);
     AudioManager.get().playSFX(this, 'fanfare', 0.55);
@@ -862,6 +866,7 @@ export class BiciScene extends Phaser.Scene {
     this.mgActive = false;
     this.mgStarT = 0;
     this.trande.sprite.clearTint();
+    AudioManager.get().setFgMusicRate(1);   // sicurezza: musica normale a fine corsa
     if (this.shieldBubble) {
       this.shieldBubble.destroy();
       this.shieldBubble = null;

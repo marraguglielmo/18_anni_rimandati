@@ -30,6 +30,11 @@ const DF = { x: 30, y: 95, w: 92, h: 72 };
 const DF_CX = DF.x + DF.w / 2; // ≈ 76
 const DF_CY = DF.y + DF.h / 2; // ≈ 131
 
+// Palla disco: posizione, raggio e palette (usate dall'animazione per frame)
+const DISCO = { x: 240, y: 20, r: 11 };
+const DISCO_RAY_COLS = [0xff3366, 0x3366ff, 0xffdd33, 0x33ff88, 0xcc44ff, 0xff8833];
+const MIRROR_COLS = [0xffffff, 0xcfe0ff, 0x9fb8e0, 0xdfeaff, 0xbfd0f0];
+
 // ↓ Cambia questo col BPM della tua canzone (usa un'app tipo BPMAnalyzer)
 const DANCE_BPM = 130;
 const DANCE_FALL_MS = 1700; // ms per cadere dall'alto alla hit zone
@@ -257,10 +262,10 @@ const RETURN_FROM_PONG_LINES: DialogueLine[] = [
   { speaker: 'umberto', text: '...ok. Abbiamo perso. Ma sto benissimo. *hic*' },
   { speaker: 'bubi', text: 'Umberto. Hai bevuto un litro di birra in venti minuti.' },
   { speaker: 'umberto', text: 'Esatto. E sono ancora in piedi. Sono un atleta.' },
-  { speaker: 'bubi', text: 'Ué... Stefano che fa alla consolle?' },
-  { speaker: 'umberto', text: '...mette musica, no?' },
-  { speaker: 'bubi', text: 'Quella non è musica. È un disco che sta morendo.' },
-  { speaker: 'stefano', text: 'Vabbè *hic* ...ci sto lavorando.' },
+  { speaker: 'bubi', text: 'Stefano che cazzo fa alla consolle?' },
+  { speaker: 'umberto', text: '...sta minte la musica' },
+  { speaker: 'bubi', text: 'E chira musica la chiami??' },
+  { speaker: 'stefano', text: 'Oh babbi... come cazzo funziona sta merda??' },
   { speaker: 'bubi', text: 'Ti sfido a ballare. Uno contro uno. Pista là.' },
   { speaker: 'umberto', text: 'Io? Ballare? Bubi, io BALLO BENISSIMO.' },
   { speaker: 'bubi', text: 'Allora vacci. Ti aspetto.' },
@@ -301,6 +306,10 @@ export class PartyScene extends Phaser.Scene {
   private ilaria!: Phaser.GameObjects.Sprite;
   private ilariaHalo!: Phaser.GameObjects.Graphics;
   private speakerEq!: Phaser.GameObjects.Graphics;
+  private danceFloorFx!: Phaser.GameObjects.Graphics;
+  private discoFx!: Phaser.GameObjects.Graphics;
+  private discBallFx!: Phaser.GameObjects.Graphics;
+  private discRaysFx!: Phaser.GameObjects.Graphics;
   private obstacles: Phaser.GameObjects.Rectangle[] = [];
   private questHUD!: QuestHUD;
   private metIlaria = false;
@@ -606,6 +615,8 @@ export class PartyScene extends Phaser.Scene {
     this.player.update([]);
     this.player.sprite.setDepth(this.player.sprite.y);
     this.animateSpeakers();
+    this.animateDanceFloor();
+    this.animateDisco();
 
     // Il player raggiunge Ilaria
     if (this.arrivalDone && !this.metIlaria && !this.dialogue.isActive) {
@@ -815,27 +826,53 @@ export class PartyScene extends Phaser.Scene {
     g.fillRect(96, 52, 8, 30);
     this.addObstacle(26, 50, 78, 32);
 
-    // Tavolino con drink
-    g.fillStyle(0x6e5232);
-    g.fillRect(140, 150, 36, 20);
-    for (const [dx, dc] of [
-      [148, 0xff5555],
-      [158, 0x55ddff],
-      [168, 0xaaff55],
-    ] as [number, number][]) {
-      g.fillStyle(dc);
-      g.fillRect(dx, 154, 4, 6);
+    // Tavolino con drink, bottiglia e posacenere
+    g.fillStyle(0x4a3620, 1); g.fillRect(140, 150, 36, 20);            // piano
+    g.fillStyle(0x6e5232, 1); g.fillRect(140, 150, 36, 3);            // bordo alto
+    g.fillStyle(0x2a1e12, 1); g.fillRect(140, 168, 36, 2);           // ombra frontale
+    g.fillStyle(0x2a7a3a, 0.9); g.fillRect(144, 143, 4, 9); g.fillRect(145, 140, 2, 4); // bottiglia
+    for (const [dx, dc] of [[154, 0xff5555], [162, 0x55ddff], [170, 0xaaff55]] as [number, number][]) {
+      g.fillStyle(0xdddddd, 0.9); g.fillRect(dx, 152, 4, 7);         // bicchiere
+      g.fillStyle(dc, 0.85);      g.fillRect(dx, 155, 4, 4);         // drink
     }
+    g.fillStyle(0x888888, 1); g.fillEllipse(150, 163, 8, 4);         // posacenere
+    g.fillStyle(0x3a3a3a, 1); g.fillEllipse(150, 163, 5, 2);
+    g.fillStyle(0xeeeecc, 1); g.fillRect(149, 162, 3, 1);            // mozzicone
     this.addObstacle(140, 150, 36, 20);
 
-    // Buffet a nord
-    g.fillStyle(0x8a6a42);
-    g.fillRect(180, 38, 120, 18);
-    for (let i = 0; i < 6; i++) {
-      g.fillStyle([0xffcc66, 0xff8866, 0xddff88][i % 3]);
-      g.fillCircle(192 + i * 20, 46, 4);
+    // Buffet a nord — tovaglia rossa, piatti, torta con candelina, punch
+    g.fillStyle(0x9a3a4a, 1); g.fillRect(178, 36, 124, 22);          // tovaglia
+    g.fillStyle(0xb84a5a, 1); g.fillRect(178, 36, 124, 3);          // piega
+    g.fillStyle(0x7a2a3a, 1); g.fillRect(178, 55, 124, 3);          // ombra
+    for (let fx = 180; fx < 300; fx += 8) { g.fillStyle(0x7a2a3a, 1); g.fillRect(fx, 58, 4, 2); } // frange
+    for (let i = 0; i < 5; i++) {                                    // piatti con cibo
+      const px = 190 + i * 22;
+      g.fillStyle(0xdddddd, 1); g.fillEllipse(px, 47, 9, 5);
+      g.fillStyle([0xffcc66, 0xff8866, 0xddff88, 0xcc7744, 0xffddaa][i], 1);
+      g.fillEllipse(px, 46, 6, 3);
     }
-    this.addObstacle(180, 38, 120, 18);
+    g.fillStyle(0xf0e0c0, 1); g.fillRect(232, 41, 16, 10);          // torta
+    g.fillStyle(0xd8a0b0, 1); g.fillRect(232, 41, 16, 3);          // glassa
+    g.fillStyle(0xff4466, 1); g.fillRect(239, 37, 2, 4);          // candelina
+    g.fillStyle(0xffdd66, 1); g.fillRect(239, 36, 2, 1);          // fiamma
+    g.fillStyle(0x8899aa, 1); g.fillEllipse(285, 47, 14, 7);       // ciotola punch
+    g.fillStyle(0xcc4488, 0.9); g.fillEllipse(285, 46, 11, 4);
+    this.addObstacle(178, 36, 124, 22);
+
+    // Pianta in vaso (angolo, accanto al divano)
+    g.fillStyle(0x2f7a34, 1); g.fillCircle(116, 74, 8);
+    g.fillStyle(0x3fa049, 1); g.fillCircle(113, 71, 5);
+    g.fillStyle(0x58c063, 1); g.fillCircle(119, 72, 4);
+    g.fillStyle(0x8a5a2a, 1); g.fillRect(111, 80, 10, 8);
+    g.fillStyle(0x6a4420, 1); g.fillRect(111, 80, 10, 2);
+
+    // Poster musicali sui muri (parete alta)
+    g.fillStyle(0x14142a, 1); g.fillRect(60, 12, 22, 18);
+    g.fillStyle(0xff4488, 1); g.fillRect(63, 15, 16, 6);
+    g.fillStyle(0xffdd44, 1); g.fillRect(63, 22, 16, 5);
+    g.fillStyle(0x14142a, 1); g.fillRect(500, 12, 22, 18);
+    g.fillStyle(0x44aaff, 1); g.fillCircle(511, 21, 6);
+    g.fillStyle(0xffffff, 0.8); g.fillCircle(509, 19, 2);
 
     // Casse con EQ animato (spostate sul lato destro espanso)
     for (const sy of [60, 180]) {
@@ -873,6 +910,9 @@ export class PartyScene extends Phaser.Scene {
     this.addObstacle(CON_X, CON_Y, CON_W, CON_H);
 
     this.speakerEq = this.add.graphics().setDepth(6);
+    // Pista da ballo animata (tile che ciclano colore) + riflessi del globo
+    this.danceFloorFx = this.add.graphics().setDepth(4);
+    this.discoFx = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(6);
 
     // Palloncini che oscillano
     const balloons: [number, number, number][] = [
@@ -968,9 +1008,15 @@ export class PartyScene extends Phaser.Scene {
       g.lineBetween(DF.x + tx * DTILE, DF.y, DF.x + tx * DTILE, DF.y + DF.h);
     for (let ty = 0; ty <= Math.ceil(DF.h / DTILE); ty++)
       g.lineBetween(DF.x, DF.y + ty * DTILE, DF.x + DF.w, DF.y + ty * DTILE);
-    // Bordo pista
-    g.lineStyle(2, 0xcc44ff, 1);
+    // Bordo pista — doppio neon con angoli luminosi
+    g.lineStyle(3, 0x8a1acc, 0.55);
+    g.strokeRect(DF.x - 1, DF.y - 1, DF.w + 2, DF.h + 2);
+    g.lineStyle(2, 0xff66ff, 1);
     g.strokeRect(DF.x, DF.y, DF.w, DF.h);
+    g.fillStyle(0xffffff, 0.9);
+    for (const [cx, cy] of [
+      [DF.x, DF.y], [DF.x + DF.w, DF.y], [DF.x, DF.y + DF.h], [DF.x + DF.w, DF.y + DF.h],
+    ] as [number, number][]) g.fillRect(cx - 1, cy - 1, 2, 2);
 
     // Palla disco (parte statica nel texture — corpo + filo)
     const DB_X = 240, DB_Y = 20;
@@ -991,6 +1037,82 @@ export class PartyScene extends Phaser.Scene {
     g.fillStyle(0xeeeeff, 0.9);
     g.fillRect(DB_X - 3, DB_Y - 6, 3, 2); // highlight
 
+    // ── FESTA DEVASTATA: bicchieri, bottiglie, pozze, coriandoli a terra ────
+    // Pozze di versato (sotto tutto il resto della sporcizia)
+    const puddle = (x: number, y: number, col: number): void => {
+      g.fillStyle(col, 0.38); g.fillEllipse(x, y, 16, 7);
+      g.fillStyle(col, 0.24); g.fillEllipse(x + 8, y + 2, 9, 4);
+      g.fillStyle(0xffffff, 0.10); g.fillEllipse(x - 3, y - 1, 5, 2);
+    };
+    for (const [x, y, c] of [
+      [118, 246, 0x88151a], [300, 234, 0x5a4a1a], [446, 202, 0x224466], [212, 250, 0x88151a],
+    ] as [number, number, number][]) puddle(x, y, c);
+
+    // Bottiglie vuote sdraiate
+    const bottle = (x: number, y: number, col: number): void => {
+      g.fillStyle(col, 0.85); g.fillRect(x - 6, y - 2, 10, 4);
+      g.fillStyle(col, 0.85); g.fillRect(x + 4, y - 1, 4, 2);
+      g.fillStyle(0x1a1a1a, 1);  g.fillRect(x + 8, y - 1, 1, 2);
+      g.fillStyle(0xffffff, 0.25); g.fillRect(x - 6, y - 2, 10, 1);
+    };
+    for (const [x, y, c] of [
+      [92, 214, 0x2a7a3a], [402, 214, 0x6a4a1a], [162, 240, 0x5a2a6a],
+    ] as [number, number, number][]) bottle(x, y, c);
+
+    // Bicchieri rossi (solo cup) — in piedi o rovesciati con versamento
+    const cup = (x: number, y: number, knocked: boolean): void => {
+      if (knocked) {
+        g.fillStyle(0x88151a, 0.45); g.fillEllipse(x + 4, y + 1, 12, 4);   // liquido
+        g.fillStyle(0xcc3333, 1);    g.fillEllipse(x, y, 9, 5);            // coppa di lato
+        g.fillStyle(0x9a2222, 1);    g.fillEllipse(x - 3, y, 3, 3);        // bocca (buio)
+        g.fillStyle(0xe05555, 1);    g.fillRect(x + 3, y - 2, 3, 4);       // fondo
+      } else {
+        g.fillStyle(0x9a2222, 1); g.fillRect(x - 3, y - 5, 6, 9);          // corpo
+        g.fillStyle(0xcc3333, 1); g.fillRect(x - 3, y - 5, 5, 9);          // luce
+        g.fillStyle(0xe05555, 1); g.fillRect(x - 3, y - 5, 6, 1);          // bordo
+        g.fillStyle(0xffcc44, 0.6); g.fillRect(x - 2, y - 4, 4, 1);        // drink
+      }
+    };
+    for (const [x, y, k] of [
+      [70, 242, 1], [132, 236, 0], [210, 246, 1], [282, 240, 0], [360, 238, 1],
+      [432, 246, 0], [500, 240, 1], [540, 208, 0], [190, 208, 1], [332, 190, 0],
+      [472, 178, 1], [108, 182, 0], [258, 208, 1], [408, 232, 0],
+    ] as [number, number, number][]) cup(x, y, k === 1);
+
+    // Coriandoli e stelle filanti a terra
+    const confCols = [0xff5566, 0xffdd55, 0x55ddff, 0x66dd88, 0xaa66ff, 0xff88dd];
+    for (let i = 0; i < 70; i++) {
+      const cx = Phaser.Math.Between(20, WORLD_W - 20);
+      const cy = Phaser.Math.Between(42, WORLD_H - 16);
+      g.fillStyle(confCols[i % confCols.length], 0.85);
+      g.fillRect(cx, cy, Phaser.Math.Between(1, 2), 1);
+    }
+    // qualche stella filante (nastro) a terra
+    for (const [sx, sy, col] of [[150, 220, 0xff88dd], [380, 200, 0x55ddff], [90, 250, 0xffdd55]] as [number, number, number][]) {
+      g.lineStyle(1, col, 0.7);
+      g.beginPath();
+      g.moveTo(sx, sy);
+      for (let k = 1; k <= 6; k++) g.lineTo(sx + k * 6, sy + Math.sin(k) * 4);
+      g.strokePath();
+    }
+
+    // ── Festone di lucine lungo la parete alta ──────────────────────────────
+    const bulbCols = [0xff5566, 0xffdd55, 0x55ddff, 0x66dd88, 0xaa66ff, 0xff88dd];
+    g.lineStyle(1, 0x181220, 0.9);
+    let px = 16, py = 9;
+    for (let x = 36, i = 1; x <= WORLD_W - 16; x += 20, i++) {
+      const yy = 7 + (i % 2) * 7;
+      g.lineBetween(px, py, x, yy);
+      px = x; py = yy;
+    }
+    for (let x = 16, i = 0; x <= WORLD_W - 16; x += 20, i++) {
+      const yy = 7 + (i % 2) * 7;
+      g.fillStyle(bulbCols[i % bulbCols.length], 1);
+      g.fillCircle(x, yy + 2, 2);
+      g.fillStyle(0xffffff, 0.6);
+      g.fillRect(x - 1, yy + 1, 1, 1);
+    }
+
     // Pre-render della parte statica (pavimento, muri, arredi) in texture
     if (!this.textures.exists('tex-map-party')) {
       g.generateTexture('tex-map-party', WORLD_W, WORLD_H);
@@ -1005,35 +1127,20 @@ export class PartyScene extends Phaser.Scene {
     conFront.lineStyle(1, 0x5a3a1a);
     conFront.lineBetween(CON_X, CON_Y + CON_H, CON_X + CON_W, CON_Y + CON_H);
 
-    // Raggi disco rotanti (fuori dal texture, Additive blend)
-    const DISCO_COLS = [0xff3366, 0x3366ff, 0xffdd33, 0x33ff88, 0xcc44ff, 0xff8833];
-    const discRays = this.add.graphics()
-      .setPosition(DB_X, DB_Y)
-      .setDepth(11)
-      .setBlendMode(Phaser.BlendModes.ADD);
-    for (let ri = 0; ri < 6; ri++) {
-      const ang = (ri / 6) * Math.PI * 2;
-      discRays.lineStyle(2, DISCO_COLS[ri], 0.4);
-      discRays.lineBetween(0, 0, Math.cos(ang) * 140, Math.sin(ang) * 110);
-      discRays.lineStyle(1, DISCO_COLS[(ri + 3) % 6], 0.2);
-      discRays.lineBetween(0, 0, Math.cos(ang + 0.26) * 100, Math.sin(ang + 0.26) * 80);
-    }
-    this.tweens.add({ targets: discRays, angle: 360, duration: 4500, repeat: -1, ease: 'Linear' });
-    // Palla sovrapposta ai raggi (depth più alto per non essere coperta)
-    const discBall = this.add.graphics().setDepth(13);
-    discBall.fillStyle(0x6677aa);
-    discBall.fillCircle(DB_X, DB_Y, 9);
-    for (let mi = 0; mi < 18; mi++) {
-      const ang = (mi / 18) * Math.PI * 2;
-      discBall.fillStyle(mirrorCols[mi % 5]);
-      discBall.fillRect(
-        Math.round(DB_X + Math.cos(ang) * 6) - 2,
-        Math.round(DB_Y + Math.sin(ang) * 6) - 1,
-        3, 2,
-      );
-    }
-    discBall.fillStyle(0xeeeeff, 0.9);
-    discBall.fillRect(DB_X - 3, DB_Y - 6, 3, 2);
+    // Raggi disco + palla: ridisegnati ogni frame in animateDisco (sincronizzati).
+    this.discRaysFx = this.add.graphics().setDepth(11).setBlendMode(Phaser.BlendModes.ADD);
+
+    // Alone luminoso pulsante dietro la palla (additivo)
+    const discGlow = this.add.graphics().setDepth(12).setBlendMode(Phaser.BlendModes.ADD);
+    discGlow.fillStyle(0xaad0ff, 1); discGlow.fillCircle(DB_X, DB_Y, 20); discGlow.setAlpha(0.10);
+    this.tweens.add({ targets: discGlow, alpha: 0.22, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
+    // Aggancio metallico + asta al soffitto
+    const discMount = this.add.graphics().setDepth(12);
+    discMount.fillStyle(0x333333, 1); discMount.fillRect(DB_X - 1, 0, 2, DB_Y - 11);   // asta
+    discMount.fillStyle(0x777788, 1); discMount.fillRect(DB_X - 3, DB_Y - 12, 6, 3);    // attacco
+
+    this.discBallFx = this.add.graphics().setDepth(13);   // palla animata
 
     // Luci disco animate sulla pista (additive blend, separate dal texture)
     const dfLights: [number, number, number][] = [
@@ -1117,6 +1224,86 @@ export class PartyScene extends Phaser.Scene {
         });
       },
     });
+  }
+
+  /** Pista da ballo viva: tile che ciclano colore + riflessi mobili del globo. */
+  private animateDanceFloor(): void {
+    const t = this.time.now / 1000;
+    const D = 9;
+    const g = this.danceFloorFx;
+    g.clear();
+    for (let ty = 0; ty * D < DF.h; ty++) {
+      for (let tx = 0; tx * D < DF.w; tx++) {
+        const hue = ((tx * 26 + ty * 40) + t * 85) % 360;
+        const val = 0.5 + 0.4 * Math.sin(t * 3 + (tx + ty) * 0.55);
+        const col = (Phaser.Display.Color.HSVToRGB(hue / 360, 0.9, Phaser.Math.Clamp(val, 0.2, 1)) as Phaser.Display.Color).color;
+        g.fillStyle(col, 0.92);
+        g.fillRect(
+          DF.x + tx * D, DF.y + ty * D,
+          Math.min(D, DF.w - tx * D) - 1, Math.min(D, DF.h - ty * D) - 1,
+        );
+      }
+    }
+
+  }
+
+  /** Palla disco che GIRA: raggi, facce specchiate e riflessi tutti in sync. */
+  private animateDisco(): void {
+    const rot = (this.time.now / 1000) * 1.4;   // rotazione condivisa (rad/s)
+    const BX = DISCO.x, BY = DISCO.y, R = DISCO.r;
+
+    // ── Raggi che ruotano con la palla (con leggero sfarfallio) ──
+    const rays = this.discRaysFx;
+    rays.clear();
+    for (let ri = 0; ri < 6; ri++) {
+      const a = (ri / 6) * Math.PI * 2 + rot;
+      const flick = 0.26 + 0.16 * Math.sin(rot * 3 + ri);
+      rays.lineStyle(2, DISCO_RAY_COLS[ri], flick);
+      rays.lineBetween(BX, BY, BX + Math.cos(a) * 150, BY + Math.sin(a) * 120);
+      rays.lineStyle(1, DISCO_RAY_COLS[(ri + 3) % 6], flick * 0.5);
+      const a2 = a + 0.3;
+      rays.lineBetween(BX, BY, BX + Math.cos(a2) * 105, BY + Math.sin(a2) * 85);
+    }
+
+    // ── Palla specchiata che gira: facce scorrono, gli hotspot si muovono ──
+    const g = this.discBallFx;
+    g.clear();
+    g.fillStyle(0x243050, 1); g.fillCircle(BX, BY, R);   // sfera base
+    const rows = 8, cols = 14;
+    for (let iy = 0; iy < rows; iy++) {
+      const lat = (iy / (rows - 1) - 0.5) * Math.PI * 0.92;
+      const sy = BY + Math.sin(lat) * R;
+      const ringR = Math.cos(lat) * R;
+      for (let ix = 0; ix < cols; ix++) {
+        const lon = (ix / cols) * Math.PI * 2 + rot;
+        const cosL = Math.cos(lon);
+        if (cosL <= 0.03) continue;                       // faccia dietro: non visibile
+        const sx = BX + Math.sin(lon) * ringR;
+        // illuminazione: normale della faccia · direzione luce (alto-sx-fronte)
+        const nx = Math.sin(lon) * Math.cos(lat);
+        const ny = Math.sin(lat);
+        const nz = cosL * Math.cos(lat);
+        const dot = nx * -0.5 + ny * -0.55 + nz * 0.67;
+        const b = Phaser.Math.Clamp(0.28 + dot * 1.15, 0.1, 1);
+        const tint = MIRROR_COLS[(ix * 3 + iy) % MIRROR_COLS.length];
+        g.fillStyle(b > 0.82 ? 0xffffff : tint, 0.5 + b * 0.5);
+        g.fillRect(Math.round(sx) - 1, Math.round(sy) - 1, 2, 2);
+      }
+    }
+    g.fillStyle(0xffffff, 0.95); g.fillRect(BX - 4, BY - 6, 3, 2);   // hotspot speculare
+
+    // ── Riflessi sul pavimento (pista) sincronizzati alla stessa rotazione ──
+    const d = this.discoFx;
+    d.clear();
+    for (let i = 0; i < 5; i++) {
+      const a = rot + (i / 5) * Math.PI * 2;
+      const sx = DF_CX + Math.cos(a) * DF.w * 0.42;
+      const sy = DF_CY + Math.sin(a) * DF.h * 0.4;
+      d.fillStyle(DISCO_RAY_COLS[i % DISCO_RAY_COLS.length], 0.5);
+      d.fillCircle(sx, sy, 7);
+      d.fillStyle(0xffffff, 0.22);
+      d.fillCircle(sx, sy, 3);
+    }
   }
 
   private animateSpeakers(): void {

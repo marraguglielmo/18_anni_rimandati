@@ -92,11 +92,11 @@ export class PlayerController {
     if (!kb) throw new Error('Keyboard plugin non disponibile');
     this.keys = kb.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,SHIFT') as MoveKeys;
 
-    // Indicatore "A" lampeggiante sopra l'NPC interagibile
+    // Indicatore "INVIO" lampeggiante sopra l'NPC interagibile
     this.indicator = scene.add
-      .text(0, 0, 'A', {
+      .text(0, 0, 'INVIO', {
         fontFamily: '"Press Start 2P", monospace',
-        fontSize: '8px',
+        fontSize: '6px',
         color: '#ffe14d',
         stroke: '#000000',
         strokeThickness: 3,
@@ -272,7 +272,7 @@ export class PlayerController {
 
   /**
    * Cerca un NPC entro 20px davanti al player; se trovato mostra
-   * l'indicatore "A" lampeggiante sopra di lui.
+   * l'indicatore "INVIO" lampeggiante sopra di lui.
    */
   checkInteraction(npcs: InteractableNpc[]): InteractableNpc | null {
     const [dx, dy] = DIR_VECTORS[this.facing];

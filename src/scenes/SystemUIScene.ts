@@ -310,7 +310,7 @@ export class SystemUIScene extends Phaser.Scene {
     Settings.data.gnummaUnlocked = true;
     Settings.save();
 
-    AudioManager.get().playSFX(this, 'fanfare', 0.7);
+    AudioManager.get().playSFX(this, 'fanfare', 0.6);
     this.confettiStorm(160);
     this.showToast(first ? 'SEGRETO SBLOCCATO: GNUMMA MODE' : 'GNUMMA MODE!');
 

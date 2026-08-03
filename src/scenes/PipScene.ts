@@ -20,7 +20,7 @@ const TGT_YMIN = 18;
 
 const GOAL = 20;  // punti per vincere
 
-const FIRE_COOLDOWN = 150;    // ms minimi tra un colpo e l'altro (anti spam-click)
+const FIRE_COOLDOWN = 550;    // ms minimi tra un colpo e l'altro (anti spam-click)
 const TIME_RAMP_MS  = 75000;  // la difficoltà tende a 1 anche solo col tempo (~75s)
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,31 +224,66 @@ export class PipScene extends Phaser.Scene {
   // ── INTRO ─────────────────────────────────────────────────────────────────
 
   private showIntro(): void {
-    const box = this.add.rectangle(W / 2, H / 2, 340, 128, 0x000000, 0.88)
-      .setDepth(100);
-    const title = this.add.text(W / 2, H / 2 - 50, 'EMERGENZA!!', {
-      fontFamily: FONT, fontSize: '11px', color: '#ff4444',
-      stroke: '#000000', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(101);
+    const cx = W / 2, cy = H / 2;
+    const els: Phaser.GameObjects.GameObject[] = [];
 
+    const veil = this.add.rectangle(cx, cy, W, H, 0x000000, 0.55).setDepth(99);
+    els.push(veil);
+
+    // Pannello
+    const PW = 306, PH = 150;
+    const x0 = cx - PW / 2, y0 = cy - PH / 2;
+    const panel = this.add.graphics().setDepth(100);
+    panel.fillStyle(0x14110a, 0.97); panel.fillRoundedRect(x0, y0, PW, PH, 10);
+    panel.lineStyle(3, 0xffdd44, 1);  panel.strokeRoundedRect(x0, y0, PW, PH, 10);
+    // Fascia rossa "emergenza" in cima
+    panel.fillStyle(0xcc2222, 1); panel.fillRoundedRect(x0, y0, PW, 24, 10);
+    panel.fillRect(x0, y0 + 14, PW, 10);
+    panel.fillStyle(0x8a1414, 1); panel.fillRect(x0, y0 + 24, PW, 2);
+    els.push(panel);
+
+    // Titolo sulla fascia
+    els.push(this.add.text(cx, y0 + 12, '!!  EMERGENZA PIPÌ  !!', {
+      fontFamily: FONT, fontSize: '9px', color: '#ffffff',
+      stroke: '#4a0000', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(102));
+
+    // Goccia gialla (icona) a sinistra
+    const dx = x0 + 40, dy = cy + 14;
+    const drop = this.add.graphics().setDepth(101);
+    drop.fillStyle(0xffdd44, 1);
+    drop.fillCircle(dx, dy, 16);
+    drop.fillTriangle(dx - 11, dy - 4, dx + 11, dy - 4, dx, dy - 32);
+    drop.fillStyle(0xffeffa, 0.55); drop.fillEllipse(dx - 5, dy - 2, 5, 9);   // riflesso
+    drop.fillStyle(0xd4a017, 0.6);  drop.fillEllipse(dx + 6, dy + 6, 5, 4);   // ombra
+    els.push(drop);
+
+    // Testo
+    const tx = dx + 26;
     const rows = [
-      { y: -24, txt: 'Umberto ha urgente necessità.', col: '#ffffff' },
-      { y:  -8, txt: 'Punta il mirino. Clicca per sparare.',  col: '#ffffff' },
-      { y:   8, txt: `Raggiungi ${GOAL} punti per finire!`,  col: '#44ff88' },
-      { y:  32, txt: '– CLICCA PER INIZIARE –',             col: '#ffdd44' },
+      { y: -34, txt: 'Umberto ha una necessità', col: '#ffffff', sz: '6px' },
+      { y: -24, txt: 'URGENTISSIMA!',            col: '#ff6666', sz: '6px' },
+      { y:  -6, txt: 'Punta il mirino e clicca', col: '#ffffff', sz: '6px' },
+      { y:   4, txt: 'per sparare la pipì.',      col: '#ffdd44', sz: '6px' },
+      { y:  22, txt: `Riempi la barra: ${GOAL} centri!`, col: '#66ff99', sz: '6px' },
     ];
-    const texts = rows.map(r =>
-      this.add.text(W / 2, H / 2 + r.y, r.txt, {
-        fontFamily: FONT, fontSize: '6px', color: r.col,
+    for (const r of rows) {
+      els.push(this.add.text(tx, cy + r.y, r.txt, {
+        fontFamily: FONT, fontSize: r.sz, color: r.col,
         stroke: '#000000', strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(101)
-    );
-    this.tweens.add({ targets: texts[texts.length - 1], alpha: 0.2,
-      duration: 600, yoyo: true, repeat: -1 });
+      }).setOrigin(0, 0.5).setDepth(101));
+    }
+
+    const prompt = this.add.text(cx, y0 + PH - 12, '– CLICCA PER PISCIARE –', {
+      fontFamily: FONT, fontSize: '7px', color: '#ffdd44',
+      stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(101);
+    els.push(prompt);
+    this.tweens.add({ targets: prompt, alpha: 0.2, duration: 600, yoyo: true, repeat: -1 });
 
     const startGame = (): void => {
       this.input.off('pointerdown', startGame);
-      [box, title, ...texts].forEach(o => o.destroy());
+      els.forEach(o => o.destroy());
       this.started   = true;
       this.startTime = this.time.now;
       AudioManager.get().playSFX(this, 'confirm', 0.6);
@@ -542,6 +577,7 @@ export class PipScene extends Phaser.Scene {
     const aimY = this.crossY + Math.cos(this.drunkWobble * 0.7) * wobR * 0.6;
 
     this.showSpray(aimX, aimY);
+    AudioManager.get().playSFX(this, 'pee', 0.45);   // "psss" ad ogni colpo di pipì
 
     let hit: Target | null = null;
     let best = Infinity;
@@ -632,17 +668,34 @@ export class PipScene extends Phaser.Scene {
   }
 
   private showSpray(tx: number, ty: number): void {
-    const sx = W / 2, sy = PLAYER_Y - 20;
+    const sx = W / 2, sy = PLAYER_Y - 18;   // cavallo di Umberto
     this.sprayGfx.clear();
-    for (let i = 0; i <= 12; i++) {
-      const p  = i / 12;
-      const px = sx + (tx - sx) * p;
-      const py = sy + (ty - sy) * p;
-      this.sprayGfx.fillStyle(0xffdd44, 0.9 - p * 0.5);
-      this.sprayGfx.fillCircle(px, py, Math.max(0.5, 2.5 - p * 1.5));
+
+    // Getto ad ARCO (Bézier quadratica: base → punto di controllo in alto → bersaglio),
+    // più spesso alla base, con gocce laterali sparse.
+    const mx = (sx + tx) / 2;
+    const my = Math.min(sy, ty) - 22;       // apice dell'arco sopra i due estremi
+    const N = 18;
+    for (let i = 0; i <= N; i++) {
+      const p = i / N, q = 1 - p;
+      const px = q * q * sx + 2 * q * p * mx + p * p * tx;
+      const py = q * q * sy + 2 * q * p * my + p * p * ty;
+      this.sprayGfx.fillStyle(0xffe25a, 0.95 - p * 0.35);
+      this.sprayGfx.fillCircle(px, py, Math.max(0.7, 3.3 - p * 2.4));
+      if (i % 3 === 0) {                     // schizzi laterali
+        this.sprayGfx.fillStyle(0xffd23a, 0.5);
+        this.sprayGfx.fillCircle(px + Phaser.Math.Between(-3, 3), py + Phaser.Math.Between(-2, 2), 1);
+      }
     }
+    // Splash sul punto d'impatto
+    this.sprayGfx.fillStyle(0xffe25a, 0.85);
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2;
+      this.sprayGfx.fillCircle(tx + Math.cos(a) * 4, ty + Math.sin(a) * 4, 1.4);
+    }
+
     this.tweens.add({
-      targets: this.sprayGfx, alpha: 0, duration: 260,
+      targets: this.sprayGfx, alpha: 0, duration: 300,
       onComplete: () => { this.sprayGfx.clear(); this.sprayGfx.setAlpha(1); },
     });
   }
@@ -656,18 +709,50 @@ export class PipScene extends Phaser.Scene {
     AudioManager.get().playSFX(this, 'fanfare', 0.6);
     Juice.confetti(this, 70);
 
-    const box = this.add.rectangle(W / 2, H / 2, 300, 100, 0x000000, 0.9).setDepth(100);
-    const t1  = this.add.text(W / 2, H / 2 - 30, 'MISSIONE COMPIUTA!', {
-      fontFamily: FONT, fontSize: '8px', color: '#44ff88',
-      stroke: '#000000', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(101);
-    const t2  = this.add.text(W / 2, H / 2 - 8, 'Umberto si sente meglio.', {
-      fontFamily: FONT, fontSize: '6px', color: '#ffffff',
-      stroke: '#000000', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(101);
+    const cx = W / 2, cy = H / 2;
+    const els: Phaser.GameObjects.GameObject[] = [];
 
-    [box, t1, t2].forEach(o => o.setAlpha(0));
-    this.tweens.add({ targets: [box, t1, t2], alpha: 1, duration: 500, delay: 200 });
+    const veil = this.add.rectangle(cx, cy, W, H, 0x000000, 0.5).setDepth(99);
+    els.push(veil);
+
+    const PW = 300, PH = 118;
+    const x0 = cx - PW / 2, y0 = cy - PH / 2;
+    const panel = this.add.graphics().setDepth(100);
+    panel.fillStyle(0x0d140c, 0.97); panel.fillRoundedRect(x0, y0, PW, PH, 10);
+    panel.lineStyle(3, 0x66ff99, 1);  panel.strokeRoundedRect(x0, y0, PW, PH, 10);
+    panel.fillStyle(0x1f8a3a, 1); panel.fillRoundedRect(x0, y0, PW, 24, 10); panel.fillRect(x0, y0 + 14, PW, 10);
+    panel.fillStyle(0x0f5a24, 1); panel.fillRect(x0, y0 + 24, PW, 2);
+    els.push(panel);
+
+    els.push(this.add.text(cx, y0 + 12, 'SOLLIEVO TOTALE', {
+      fontFamily: FONT, fontSize: '8px', color: '#ffffff', stroke: '#08320f', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(102));
+
+    // Goccia felice (sollevata) a sinistra
+    const dx = x0 + 40, dy = cy + 12;
+    const drop = this.add.graphics().setDepth(101);
+    drop.fillStyle(0xffe25a, 1); drop.fillCircle(dx, dy, 15);
+    drop.fillTriangle(dx - 10, dy - 3, dx + 10, dy - 3, dx, dy - 28);
+    drop.fillStyle(0xfff2a8, 0.5); drop.fillEllipse(dx - 5, dy - 2, 4, 8);
+    drop.fillStyle(0x2a1e00, 1);
+    drop.fillRect(dx - 6, dy - 1, 3, 1); drop.fillRect(dx + 3, dy - 1, 3, 1);   // occhi chiusi ^^
+    drop.fillRect(dx - 4, dy + 4, 2, 1); drop.fillRect(dx + 2, dy + 4, 2, 1);
+    drop.fillRect(dx - 2, dy + 5, 4, 1);                                          // sorriso
+    els.push(drop);
+
+    const tx = dx + 26;
+    els.push(this.add.text(tx, cy - 8, 'PISCIATA EFFETTUATA!', {
+      fontFamily: FONT, fontSize: '7px', color: '#66ff99', stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setDepth(101));
+    els.push(this.add.text(tx, cy + 6, 'Umberto si sente un altro.', {
+      fontFamily: FONT, fontSize: '6px', color: '#ffffff', stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setDepth(101));
+    els.push(this.add.text(tx, cy + 18, `Centri: ${this.score}`, {
+      fontFamily: FONT, fontSize: '6px', color: '#ffdd44', stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setDepth(101));
+
+    els.forEach(o => (o as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(0));
+    this.tweens.add({ targets: els, alpha: 1, duration: 500, delay: 200 });
     this.time.delayedCall(2800, () =>
       TransitionSystem.fadeToScene(this, 'CeceScene', { phase: 'after-pip' }, 1000)
     );

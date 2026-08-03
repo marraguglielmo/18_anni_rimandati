@@ -680,7 +680,7 @@ export class BiciScene extends Phaser.Scene {
       const overlapY = trandeBottom > topEdge && trandeTop < e.centerY + e.halfH;
 
       if (e.kind === 'coin' && overlapY) {
-        AudioManager.get().playSFX(this, 'coin', 0.7);
+        AudioManager.get().playSFX(this, 'coin', 0.55);
         this.sparkle(e.obj.x, e.centerY, 0xffdd44);
         this.showCoinPop(e.obj.x, e.centerY - 10); // popup +1
         e.obj.destroy();
@@ -713,7 +713,7 @@ export class BiciScene extends Phaser.Scene {
       }
       // Power-up: raccolta
       if (e.kind === 'power' && overlapY) {
-        AudioManager.get().playSFX(this, 'coin', 0.9);
+        AudioManager.get().playSFX(this, 'coin', 0.6);
         this.sparkle(e.obj.x, e.centerY, 0xffffff);
         const type = e.powerType;
         e.obj.destroy();
@@ -844,7 +844,7 @@ export class BiciScene extends Phaser.Scene {
     this.mgDefeats++;
     this.mgCooldown = true;
     this.mgCombo = 0;
-    AudioManager.get().playSFX(this, 'hit');
+    AudioManager.get().playSFX(this, 'hit', 0.5);
     Juice.hitStop(this, 80);
     showEmote(this, this.trande.container.x, this.trande.container.y - 4, 'sweat', {
       duration: 1100,
@@ -1243,7 +1243,7 @@ export class BiciScene extends Phaser.Scene {
     // Nasconde il label durante la caduta
     (trande.container.getAt(1) as Phaser.GameObjects.Text)?.setAlpha(0);
 
-    AudioManager.get().playSFX(this, 'hit');
+    AudioManager.get().playSFX(this, 'hit', 0.5);
     this.cameras.main.shake(350, 0.012);
 
     // ── BICI ── scivolata per inerzia → inclinazione → caduta laterale

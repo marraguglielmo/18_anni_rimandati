@@ -17,7 +17,7 @@ const FONT = '"Press Start 2P", monospace';
 
 // ── DEBUG ────────────────────────────────────────────────────────────────────
 // Metti false per saltare il loader e andare subito alla schermata titolo
-const SHOW_LOADER = false;
+const SHOW_LOADER = true;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // File audio (l'utente li carica in public/assets/audio/; se mancano: silenzio)
@@ -40,6 +40,7 @@ const AUDIO_FILES: [string, string][] = [
   ['step',     'assets/audio/step.wav'],
   ['teleport', 'assets/audio/teleport.wav'],
   ['warp',     'assets/audio/warp.wav'],
+  ['pee',      'assets/audio/pee.wav'],
   ['scontro',  'assets/audio/scontro.wav'],
   ['fanfare',  'assets/audio/fanfare.mp3'],
 ];
@@ -307,7 +308,7 @@ export class BootScene extends Phaser.Scene {
     Settings.data.sunFound = true;
     Settings.save();
 
-    AudioManager.get().playSFX(this, 'fanfare', 0.7);
+    AudioManager.get().playSFX(this, 'fanfare', 0.6);
     Juice.confetti(this, 140);
     Juice.toast(this, first ? 'SEGRETO SBLOCCATO: IL SOLE DI TRICASE' : 'IL SOLE BALLA ANCORA');
     this.cameras.main.shake(220, 0.004);

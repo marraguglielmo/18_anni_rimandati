@@ -284,7 +284,7 @@ export class TransitionSystem {
    * 6. DETONAZIONE — triplo shockwave + esplosione di particelle + flash
    */
   static async teleportEffect(scene: Phaser.Scene): Promise<void> {
-    AudioManager.get().playSFX(scene, 'teleport', 0.9);
+    AudioManager.get().playSFX(scene, 'teleport', 0.6);
 
     // coordinate logiche + offset UI per gli oggetti scrollFactor(0)
     const cx = W / 2 + UI_OFF_X;
@@ -535,7 +535,7 @@ export class TransitionSystem {
     haloRing.destroy();
 
     // ── 6. DETONAZIONE: triplo shockwave + esplosione + flash ─────────────
-    AudioManager.get().playSFX(scene, 'warp', 0.85);   // burst magico (non un impatto)
+    AudioManager.get().playSFX(scene, 'warp', 0.6);   // burst magico (non un impatto)
     cam.shake(320, 0.014);
     cam.zoomTo(baseZoom, 240, 'Quad.easeOut');
     shockwave(0, 520, 0xffffff, 15);

@@ -433,7 +433,7 @@ export class DialogueSystem {
     // Nasconde subito il prompt (qualunque cosa succeda dopo)
     this.hidePromptArrow();
 
-    AudioManager.get().playSFX(this.scene, 'confirm', 0.8);
+    AudioManager.get().playSFX(this.scene, 'confirm', 0.55);
 
     if (this.typing) {
       // Testo in corso → mostra tutto subito, poi aspetta il delay (se autoAdvance)

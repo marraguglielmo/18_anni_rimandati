@@ -275,7 +275,7 @@ export class BattleScene extends Phaser.Scene {
 
   private selectMove(index: number): void {
     if (!this.moveResolve) return; // disabilitato durante animazioni/messaggi
-    AudioManager.get().playSFX(this, 'confirm', 0.8);
+    AudioManager.get().playSFX(this, 'confirm', 0.55);
     const resolve = this.moveResolve;
     this.moveResolve = null;
     this.moveUI.setVisible(false);
@@ -321,7 +321,7 @@ export class BattleScene extends Phaser.Scene {
     else this.enemyHp = to;
 
     // posa "colpito" + contraccolpo + lampeggio + suono danno
-    AudioManager.get().playSFX(this, 'hit');
+    AudioManager.get().playSFX(this, 'hit', 0.5);
     const sprite = isPlayer ? this.playerSprite : this.enemySprite;
     const hitId = isPlayer ? this.battleData.playerChar : this.battleData.enemyChar;
     sprite.setTexture(`battle-${hitId}-hit`);

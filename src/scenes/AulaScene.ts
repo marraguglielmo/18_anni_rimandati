@@ -1407,7 +1407,7 @@ export class AulaScene extends Phaser.Scene {
       } else if (i === selected && selected !== qData.correct) {
         this.drawMgBtn(bg, BTN_W, BTN_H, 'wrong');
         this.cameras.main.shake(200, 0.008);
-        AudioManager.get().playSFX(this, 'hit', 0.8);
+        AudioManager.get().playSFX(this, 'hit', 0.55);
         // Flash rosso a schermo intero
         const flash = this.add
           .rectangle(UI_OFF_X, UI_OFF_Y, GAME_WIDTH, GAME_HEIGHT, 0xff0000, 0.45)

@@ -364,6 +364,7 @@ export class PartyScene extends Phaser.Scene {
     this.danceMgActive = false;
     this.danceArrows = [];
     this.brokenMusicMode = false;
+    AudioManager.get().setFgMusicRate(1);   // sicurezza: nessun pitch ubriaco residuo
     this.postPongDanceResolve = null;
     this.drunkT = 0;
     this.drunkCamTimer = null;
@@ -1358,18 +1359,15 @@ export class PartyScene extends Phaser.Scene {
       },
     });
 
-    // Distorsione audio: pitch BGM ondeggia ±2.5%
-    const am = AudioManager.get() as unknown as { bgMusic: Phaser.Sound.WebAudioSound | null };
-    const bgm = am.bgMusic;
-    if (bgm && (bgm as Phaser.Sound.WebAudioSound).setRate) {
-      this.drunkMusicTimer = this.time.addEvent({
-        delay: 60,
-        loop: true,
-        callback: () => {
-          (bgm as Phaser.Sound.WebAudioSound).setRate(1 + Math.sin(this.drunkT * 0.9) * 0.025);
-        },
-      });
-    }
+    // Distorsione audio: il pitch della musica IN CORSO (FGM party/dance,
+    // quella che si sente davvero) ondeggia ±2.5%.
+    this.drunkMusicTimer = this.time.addEvent({
+      delay: 60,
+      loop: true,
+      callback: () => {
+        AudioManager.get().setFgMusicRate(1 + Math.sin(this.drunkT * 0.9) * 0.025);
+      },
+    });
   }
 
   /** Ferma gli effetti ubriachi e ripristina camera + audio. */
@@ -1384,11 +1382,7 @@ export class PartyScene extends Phaser.Scene {
     cam.setFollowOffset(0, 0);
     cam.setRotation(0);
     cam.setZoom(2);
-    const am = AudioManager.get() as unknown as { bgMusic: Phaser.Sound.WebAudioSound | null };
-    const bgm = am.bgMusic;
-    if (bgm && (bgm as Phaser.Sound.WebAudioSound).setRate) {
-      (bgm as Phaser.Sound.WebAudioSound).setRate(1.0);
-    }
+    AudioManager.get().setFgMusicRate(1);   // ripristina il pitch normale della musica
   }
 
   /** Schedula il prossimo episodio di vomito (ogni 4-7 s, mentre è ubriaco). */

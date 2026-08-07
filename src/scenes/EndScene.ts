@@ -141,7 +141,7 @@ export class EndScene extends Phaser.Scene {
     await this.showBlock(
       'CON LA PARTECIPAZIONE DI',
       ['Lerry', 'Cosimino', 'Guglielmo', 'Aniceto', 'Trande',
-       'Cece', 'Pietro', 'Chiara',  'Ilaria', 'Stefano', 'Loretta Goggi', 'Don Biagio', 'Bea', 'Umberto', 'Bubi', 'Soccorritore in moto', 'Compagni di classe del liceo', 'Festaioli alla festa di Ilaria', 'Camilla', 'Fortiguerra', 'Le molise', 'Grest Sant\'Antonio'],
+       'Cece', 'Pietro', 'Chiara',  'Ilaria', 'Stefano', 'Loretta Goggi', 'Don Biagio','Giacomo', 'Alessandra Marzo', 'Zenzola', 'Bea', 'Umberto', 'Bubi', 'Soccorritore in moto', 'Compagni di classe del liceo', 'Festaioli alla festa di Ilaria', 'Camilla', 'Fortiguerra', 'Le molise', 'Grest Sant\'Antonio'],
       '#222222', '#555555', T,
       8   // prime 8 righe in colonna, le successive sparpagliate per lo schermo
     );
@@ -197,7 +197,20 @@ export class EndScene extends Phaser.Scene {
       .setOrigin(0.5).setAlpha(0).setDepth(10);
 
     await this.fadeIn(finale, T.finaleFadeIn);
+
+    // Invito a cliccare (lampeggiante) — chiarisce che si torna al titolo col click
+    const hint = this.add
+      .text(W / 2, H / 2 + 20, '– clicca per tornare all\'inizio –', {
+        fontFamily: FONT, fontSize: '6px', color: '#555555',
+      })
+      .setOrigin(0.5).setAlpha(0).setDepth(10);
+    await this.fadeIn(hint, 500);
+    const blink = this.tweens.add({
+      targets: hint, alpha: 0.3, duration: 550, yoyo: true, repeat: -1,
+    });
+
     await this.waitForClick(); // il gioco finisce qui: si prosegue solo col click
+    blink.remove();
 
     // Ferma la FGM (melancholy); poi si torna alla schermata iniziale
     AudioManager.get().stopFgMusic(this, T.outroFade);

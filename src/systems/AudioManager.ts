@@ -150,6 +150,24 @@ export class AudioManager {
     }
   }
 
+  /**
+   * Sfuma la traccia BGM corrente fino al silenzio e la ferma.
+   * Usata per una "dissolvenza in uscita" pulita prima di cambiare musica.
+   * Dopo la chiamata bgMusicKey è resettato: una successiva playBgMusic()
+   * riparte da zero anche con la stessa chiave.
+   */
+  fadeOutBgMusic(durationMs = 800, onDone?: () => void): void {
+    const m = this.bgMusic;
+    if (!m) { onDone?.(); return; }
+    this.bgMusic    = null;
+    this.bgMusicKey = '';
+    this.fadeTo(m, 0, durationMs, 'bg', () => {
+      m.stop();
+      (m as any).destroy?.();
+      onDone?.();
+    });
+  }
+
   // ══════════════════════════════════════════════════════════════════════
   //  FGM — primo piano situazionale
   // ══════════════════════════════════════════════════════════════════════

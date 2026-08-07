@@ -46,7 +46,7 @@ export class TestScene extends Phaser.Scene {
       lines: TEST_LINES,
       onComplete: () => {
         const done = this.add
-          .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'FINE DIALOGO\n\nclick per ripetere', {
+          .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'FINE DIALOGO\n\npremi per ripetere', {
             fontFamily: '"Press Start 2P", monospace',
             fontSize: '8px',
             color: '#ffffff',

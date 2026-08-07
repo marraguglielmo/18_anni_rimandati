@@ -82,17 +82,6 @@ const CLASS_CHATTER = [
   'e mo?', 'che palle', 'occhio al prof', 'te na penna?',
 ];
 
-const ZENZOLA_LINES: DialogueLine[] = [
-  { speaker: 'zenzola', text: 'Oh umberto! Tieni le sigarette?' },
-  { speaker: 'bubi', text: 'Zenzola, mo no... aggiu de sciare te lu prof.' },
-];
-
-const SANAPO_LINES: DialogueLine[] = [
-  { speaker: 'sanapo', text: 'Gabriele! andiamo in bagno a fare un musically!' },
-  { speaker: 'bubi', text: 'Si porcu diu, sciamu...' },
-  { speaker: 'bubi', text: 'Chiamo Umberto.' },
-];
-
 const LESSON_LINES: DialogueLine[] = [
   { speaker: 'cece', text: 'Lezione di oggi: anatomia della donna' },
   { speaker: 'bubi', text: 'Ma ci ne sai cece... mancu mammata te vole' },
@@ -276,10 +265,6 @@ export class AulaScene extends Phaser.Scene {
   private students: { sprite: Phaser.GameObjects.Sprite; id: string }[] = [];
   private followers: { sprite: Phaser.GameObjects.Sprite; id: string; facing: string }[] = [];
   private trandeTalked = false;
-  private zenzola!: Phaser.GameObjects.Sprite;
-  private sanapo!: Phaser.GameObjects.Sprite;
-  private zenzolaDone = false;
-  private sanapoDone = false;
   private classTimers: Phaser.Time.TimerEvent[] = [];
   private classActive = false;   // i compagni si muovono solo quando il player ha il controllo
   private classStopped = false;  // stop definitivo (lezione iniziata)
@@ -308,8 +293,6 @@ export class AulaScene extends Phaser.Scene {
   create(): void {
     this.interactables = [];
     this.trandeTalked = false;
-    this.zenzolaDone = false;
-    this.sanapoDone = false;
     this.classTimers = [];
     this.classActive = false;
     this.classStopped = false;
@@ -327,7 +310,7 @@ export class AulaScene extends Phaser.Scene {
 
     this.drawMap();
 
-    for (const id of ['bubi', 'umberto', 'chiara', 'trande', 'cece', 'zenzola', 'sanapo']) {
+    for (const id of ['bubi', 'umberto', 'chiara', 'trande', 'cece']) {
       generateSpriteTexture(this, id, CHAR_CONFIGS[id]);
     }
     STUDENT_SHIRTS.forEach((color, i) => {
@@ -354,11 +337,6 @@ export class AulaScene extends Phaser.Scene {
     this.trande = this.spawnNamed('trande', 440, 290, 'left');
     this.interactables.push({ id: 'trande', sprite: this.trande });
     this.questHUD = new QuestHUD(this, WORLD_W / 2 + UI_OFF_X, 50 + UI_OFF_Y).addMarker();
-
-    // Due compagni lungo il tragitto verso Trande: fermano Bubi con un dialogo
-    // automatico. Prima Zenzola, poco dopo Emanuele Sanapo.
-    this.zenzola = this.spawnNamed('zenzola', 300, 246, 'left');
-    this.sanapo = this.spawnNamed('sanapo', 380, 262, 'left');
 
     this.dialogue = new DialogueSystem(this);
     this.player = new PlayerController(this, 'bubi', 240, 290, this.dialogue);
@@ -741,30 +719,6 @@ export class AulaScene extends Phaser.Scene {
     this.player.update(this.trandeTalked ? [] : this.interactables);
     this.player.sprite.setDepth(this.player.sprite.y);
     if (!this.cutscene) this.updateFollowers();
-    this.checkNpcTriggers();
-  }
-
-  /** Zenzola e poi Sanapo fermano Bubi al passaggio: dialogo automatico. */
-  private checkNpcTriggers(): void {
-    if (this.cutscene || this.player.locked || this.dialogue.isActive || this.trandeTalked) return;
-    const p = this.player.sprite;
-    if (!this.zenzolaDone &&
-        Phaser.Math.Distance.Between(p.x, p.y, this.zenzola.x, this.zenzola.y) < 30) {
-      this.zenzolaDone = true;
-      this.startNpcTalk(ZENZOLA_LINES);
-    } else if (this.zenzolaDone && !this.sanapoDone &&
-        Phaser.Math.Distance.Between(p.x, p.y, this.sanapo.x, this.sanapo.y) < 30) {
-      this.sanapoDone = true;
-      this.startNpcTalk(SANAPO_LINES);
-    }
-  }
-
-  private startNpcTalk(lines: DialogueLine[]): void {
-    this.player.locked = true;
-    this.dialogue.start({
-      lines,
-      onComplete: () => { this.player.locked = false; },
-    });
   }
 
   /** Ferma il movimento dei compagni (quando la lezione inizia). */
@@ -1253,7 +1207,7 @@ export class AulaScene extends Phaser.Scene {
       }).setOrigin(0.5).setScrollFactor(0).setDepth(D + 9).setAlpha(0);
       this.mgQEl(scossaMain);
 
-      const scossaHint = this.add.text(175 + OX, 197 + OY, '◆  clicca ancora per confermare  ◆', {
+      const scossaHint = this.add.text(175 + OX, 197 + OY, '◆  premi ancora per confermare  ◆', {
         fontFamily: FONT, fontSize: '4px', color: '#8899bb',
       }).setOrigin(0.5).setScrollFactor(0).setDepth(D + 9).setAlpha(0);
       this.mgQEl(scossaHint);

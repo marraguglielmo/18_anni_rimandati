@@ -46,6 +46,7 @@ export const CHAR_CONFIGS: Record<string, CharConfig> = {
   zenzola: { shirtColor: 0xd08a3a, shortHair: true },
   sanapo: { shirtColor: 0x3aa0a0 },
   // personaggi secondari
+  gianfranco: { shirtColor: 0xcc3344, pantsColor: 0x222a3a, shortHair: true }, // ciclista della piazza
   gnumma:   { shirtColor: 0x994422, skinColor: 0x5c3210, hairColor: 0x1a0e04, shortHair: true },
   alessandra: { shirtColor: 0xff99cc, bald: true, chubby: true },
   // ostacoli umani del minigioco in bici

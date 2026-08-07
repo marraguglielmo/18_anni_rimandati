@@ -40,7 +40,7 @@ export class SystemUIScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.game.sound.mute = Settings.data.muted;
+    this.game.sound.mute = false;   // funzione mute rimossa: audio sempre attivo
 
     // ── Eventi globali ───────────────────────────────────────────────────
     this.game.events.on('fable18-toast', this.showToast, this);
@@ -52,9 +52,8 @@ export class SystemUIScene extends Phaser.Scene {
 
     // ── Tastiera di sistema ──────────────────────────────────────────────
     this.input.keyboard?.on('keydown', (e: KeyboardEvent) => {
-      // Pausa / opzioni
+      // Pausa
       if (e.code === 'KeyP') this.togglePause();
-      if (e.code === 'KeyM') this.toggleMute();
 
       // Konami code
       if (e.code === KONAMI[this.konamiIdx]) {
@@ -79,13 +78,6 @@ export class SystemUIScene extends Phaser.Scene {
         }
       }
     });
-  }
-
-  private toggleMute(): void {
-    Settings.data.muted = !Settings.data.muted;
-    Settings.save();
-    this.game.sound.mute = Settings.data.muted;
-    this.showToast(Settings.data.muted ? 'AUDIO: OFF' : 'AUDIO: ON');
   }
 
   // ═══════════════════════════════════════════════════════════════ pausa

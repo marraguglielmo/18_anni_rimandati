@@ -21,6 +21,17 @@ const WORLD_H = 360;
 const TILE = 16;
 const FOUNTAIN = { x: 320, y: 190 };
 
+// Gianfranco gira per la piazza in modo casuale: vagabonda verso punti a caso,
+// ogni tanto si ferma, poi riparte a pedalare.
+const BIKE_SPEED = 52; // px/s in pedalata
+const BIKE_ROAM = { minX: 80, maxX: 560, minY: 226, maxY: 322 };
+// Due parole balbettate (dette ogni tanto sopra la testa)
+const GIANFRANCO_STUTTER = [
+  'Sai che festa è osci??',
+  'A festa di cujuni ahahahahah',
+  'Oh scusa sai...',
+];
+
 const INTRO_LINES: DialogueLine[] = [
   {
     speaker: 'umberto',
@@ -63,12 +74,24 @@ export class PiazzaScene extends Phaser.Scene {
   private finaleQueued = false;
   private ceceTimerStarted = false;
 
+  // ── Gianfranco, il ciclista che gira per la piazza (ambientale) ──
+  private gianfranco?: Phaser.GameObjects.Container;
+  private gianfrancoWheels: Phaser.GameObjects.Graphics[] = [];
+  private gianfrancoLabel?: Phaser.GameObjects.Text; // nome sopra la testa (segue il ciclista)
+  private gfRider?: Phaser.GameObjects.Sprite;       // sprite del ciclista (per idle/walk)
+  private gfState: 'riding' | 'stopped' = 'riding';
+  private gfTarget = { x: 0, y: 0 };
+  private gfStopMs = 0;
+  private gfFacingLeft = false;
+  private gfBubble?: Phaser.GameObjects.Container;    // nuvoletta balbettata (segue la testa)
+  private gfSpeechIdx = 0;                             // scorre GIANFRANCO_STUTTER in ordine
+
   constructor() {
     super('PiazzaScene');
   }
 
   preload(): void {
-    loadPortraits(this, ['bubi', 'umberto', 'trande', 'cece', 'gnumma']);
+    loadPortraits(this, ['bubi', 'umberto', 'trande', 'cece', 'gnumma', 'gianfranco']);
   }
 
   create(): void {
@@ -76,13 +99,22 @@ export class PiazzaScene extends Phaser.Scene {
     this.obstacles = [];
     this.finaleQueued = false;
     this.ceceTimerStarted = false;
+    this.gianfranco = undefined;
+    this.gianfrancoWheels = [];
+    this.gianfrancoLabel = undefined;
+    this.gfRider = undefined;
+    this.gfState = 'riding';
+    this.gfStopMs = 0;
+    this.gfFacingLeft = false;
+    this.gfBubble = undefined;
+    this.gfSpeechIdx = 0;
     AudioManager.get().playBgMusic(this, 'bgm', 0.3);
 
     this.physics.world.setBounds(0, 90, WORLD_W, WORLD_H - 90); // y=90: sotto la facciata della chiesa
     this.drawMap();
     this.startFanciulloBubbles();
 
-    for (const id of ['bubi', 'umberto', 'trande', 'cece', 'gnumma']) {
+    for (const id of ['bubi', 'umberto', 'trande', 'cece', 'gnumma', 'gianfranco']) {
       generateSpriteTexture(this, id, CHAR_CONFIGS[id]);
     }
 
@@ -98,6 +130,9 @@ export class PiazzaScene extends Phaser.Scene {
     gnummaSprite.play('gnumma-idle-right');
     makeFeetBody(this, gnummaSprite);
     this.npcs.push({ id: 'gnumma', sprite: gnummaSprite });
+
+    // Gianfranco gira per la piazza in bicicletta (elemento d'ambiente)
+    this.spawnGianfrancoCyclist();
 
     // Player (BUBI) parte in basso, bloccato durante il walk-in
     this.player = new PlayerController(this, 'bubi', 320, 350, this.dialogue);
@@ -128,10 +163,189 @@ export class PiazzaScene extends Phaser.Scene {
     this.time.delayedCall(600, () => this.startWalkInAnimation());
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     this.player.update(this.npcs);
     this.player.sprite.setDepth(this.player.sprite.y);
     this.animateWater();
+    this.updateGianfranco(delta);
+  }
+
+  // ------------------------------------------------ Gianfranco (ciclista)
+
+  /** Crea Gianfranco (sprite intero, con gambe) sulla bici; gira in updateGianfranco. */
+  private spawnGianfrancoCyclist(): void {
+    // Ruota centrata in (0,0), poi posizionata; ruota su se stessa (spin).
+    const mkWheel = (): Phaser.GameObjects.Graphics => {
+      const w = this.add.graphics();
+      w.lineStyle(1.5, 0x1a1a1a); w.strokeCircle(0, 0, 4);      // copertone
+      w.lineStyle(1, 0x888888);
+      w.lineBetween(-4, 0, 4, 0); w.lineBetween(0, -4, 0, 4);   // raggi
+      w.fillStyle(0x333333); w.fillCircle(0, 0, 1.2);           // mozzo
+      return w;
+    };
+    const wheelL = mkWheel().setPosition(-9, 4);
+    const wheelR = mkWheel().setPosition(9, 4);
+
+    // Telaio + sella + manubrio + pedivella
+    const frame = this.add.graphics();
+    frame.lineStyle(2, 0xdd4455);
+    frame.lineBetween(-9, 4, 2, -3);    // tubo obliquo
+    frame.lineBetween(-9, 4, -2, -6);   // tubo sella
+    frame.lineBetween(-2, -6, 5, -3);   // tubo orizzontale
+    frame.lineBetween(5, -3, 9, 4);     // forcella anteriore
+    frame.lineBetween(2, -3, -2, -6);   // reggisella
+    frame.lineStyle(2, 0x333333);
+    frame.lineBetween(5, -3, 6, -8);    // stelo manubrio
+    frame.lineBetween(3, -8, 8, -8);    // manubrio
+    frame.fillStyle(0x222222);
+    frame.fillRect(-4, -7, 5, 2);       // sella
+    frame.lineStyle(1.5, 0x444444);
+    frame.lineBetween(-1, 4, -3, 6);    // pedivella
+
+    // Ciclista: sprite intero (con gambe), in animazione di camminata.
+    const rider = this.add.sprite(-1, -10, 'char-gianfranco', 1).setScale(CHAR_SCALE);
+    rider.play('gianfranco-walk-right');
+
+    // Ordine: ruote → telaio → ciclista (le gambe coprono il telaio).
+    const c = this.add.container(500, 300, [wheelL, wheelR, frame, rider]);
+    c.setDepth(300);
+
+    // Nome sopra la testa — testo separato (non nel container) così NON si
+    // specchia quando Gianfranco cambia verso; segue la sua posizione.
+    const label = this.add.text(0, 0, 'GIANFRANCO', {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: '5px',
+      color: '#e2596a',
+      stroke: '#000000',
+      strokeThickness: 2,
+    }).setOrigin(0.5, 1);
+
+    this.gianfranco = c;
+    this.gianfrancoWheels = [wheelL, wheelR];
+    this.gianfrancoLabel = label;
+    this.gfRider = rider;
+    this.gfState = 'riding';
+    this.gfTarget = this.pickBikeTarget();
+    this.gfFacingLeft = false;
+
+    // Ogni tanto dice due parole balbettando
+    this.startGianfrancoChatter();
+  }
+
+  private pickBikeTarget(): { x: number; y: number } {
+    return {
+      x: Phaser.Math.Between(BIKE_ROAM.minX, BIKE_ROAM.maxX),
+      y: Phaser.Math.Between(BIKE_ROAM.minY, BIKE_ROAM.maxY),
+    };
+  }
+
+  /**
+   * Vagabondaggio casuale: pedala verso un target; arrivato, a volte si ferma
+   * un po' e poi riparte, a volte punta subito un nuovo target. Nome e nuvoletta
+   * lo seguono; le ruote girano e le gambe si animano solo mentre pedala.
+   */
+  private updateGianfranco(delta: number): void {
+    const c = this.gianfranco;
+    if (!c || !c.active) return;
+    const dt = delta / 1000;
+
+    let moving = false;
+    if (this.gfState === 'stopped') {
+      this.gfStopMs -= delta;
+      if (this.gfStopMs <= 0) {
+        this.gfTarget = this.pickBikeTarget();
+        this.gfState = 'riding';
+      }
+    } else {
+      const dx = this.gfTarget.x - c.x;
+      const dy = this.gfTarget.y - c.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 5) {
+        // Arrivato: 50% si ferma un attimo, 50% riparte verso un nuovo punto
+        if (Math.random() < 0.5) {
+          this.gfState = 'stopped';
+          this.gfStopMs = Phaser.Math.Between(800, 2800);
+        } else {
+          this.gfTarget = this.pickBikeTarget();
+        }
+      } else {
+        const step = Math.min(dist, BIKE_SPEED * dt);
+        c.x += (dx / dist) * step;
+        c.y += (dy / dist) * step;
+        moving = true;
+        if (Math.abs(dx) > 2) this.gfFacingLeft = dx < 0; // gira solo su moto orizz.
+      }
+    }
+
+    c.setDepth(c.y);
+    c.setScale(this.gfFacingLeft ? -1 : 1, 1);
+
+    // Gambe: cammina mentre pedala, idle da fermo
+    const rider = this.gfRider;
+    if (rider) {
+      const want = moving ? 'gianfranco-walk-right' : 'gianfranco-idle-right';
+      if (rider.anims.currentAnim?.key !== want) rider.play(want);
+    }
+
+    // Ruote: girano solo mentre pedala
+    if (moving) for (const w of this.gianfrancoWheels) w.rotation += 0.42;
+
+    // Nome sopra la testa
+    this.gianfrancoLabel?.setPosition(c.x, c.y - 30).setDepth(c.y + 40);
+    // Nuvoletta (se attiva) sopra il nome
+    this.gfBubble?.setPosition(c.x, c.y - 40).setDepth(c.y + 41);
+  }
+
+  /** Pianifica battute balbettate a intervalli casuali finché Gianfranco è attivo. */
+  private startGianfrancoChatter(): void {
+    const say = (): void => {
+      if (this.gianfranco?.active) this.showGianfrancoSpeech();
+      this.time.delayedCall(Phaser.Math.Between(5000, 9000), say);
+    };
+    this.time.delayedCall(Phaser.Math.Between(2500, 4500), say);
+  }
+
+  /** Nuvoletta con due parole balbettate sopra la testa (non si specchia). */
+  private showGianfrancoSpeech(): void {
+    const c = this.gianfranco;
+    if (!c || this.gfBubble) return; // non accavallare due nuvolette
+    // Frasi in ordine di scrittura (poi si riparte dalla prima)
+    const phrase = GIANFRANCO_STUTTER[this.gfSpeechIdx % GIANFRANCO_STUTTER.length];
+    this.gfSpeechIdx++;
+
+    const PAD_X = 8, PAD_T = 6, PAD_B = 6, TIP = 7;
+    const txt = this.add.text(0, -TIP - PAD_B, phrase, {
+      fontFamily: '"Press Start 2P", monospace',
+      fontSize: '5px', color: '#111111', align: 'center',
+    }).setOrigin(0.5, 1);
+
+    const pw = Math.max(Math.ceil(txt.width) + PAD_X * 2, 34);
+    const ph = Math.ceil(txt.height) + PAD_T + PAD_B;
+    const bg = this.add.graphics();
+    bg.fillStyle(0xfffef0, 0.97); bg.lineStyle(1, 0x444444, 1);
+    bg.fillRoundedRect(-pw / 2, -TIP - ph, pw, ph, 4);
+    bg.strokeRoundedRect(-pw / 2, -TIP - ph, pw, ph, 4);
+    // Codina verso il basso (punta alla testa)
+    bg.fillStyle(0xfffef0, 0.97); bg.fillTriangle(-4, -TIP, 4, -TIP, 0, 0);
+    bg.lineStyle(1, 0x444444, 1);
+    bg.beginPath(); bg.moveTo(-4, -TIP); bg.lineTo(0, 0); bg.lineTo(4, -TIP); bg.strokePath();
+
+    const bubble = this.add.container(c.x, c.y - 40, [bg, txt])
+      .setDepth(c.y + 41).setAlpha(0);
+    this.gfBubble = bubble;
+
+    this.tweens.add({
+      targets: bubble, alpha: 1, duration: 150,
+      onComplete: () => this.time.delayedCall(2200, () => {
+        this.tweens.add({
+          targets: bubble, alpha: 0, duration: 250,
+          onComplete: () => {
+            bubble.destroy();
+            if (this.gfBubble === bubble) this.gfBubble = undefined;
+          },
+        });
+      }),
+    });
   }
 
   // ------------------------------------------------------------ eventi
@@ -336,6 +550,15 @@ export class PiazzaScene extends Phaser.Scene {
         .setDepth(1600);
       em.explode(30);
       this.tweens.add({ targets: s, alpha: 0, duration: 500 });
+    }
+
+    // Anche Gianfranco (il ciclista d'ambiente), il nome e la nuvoletta svaniscono
+    if (this.gianfranco) {
+      const targets: Phaser.GameObjects.GameObject[] = [this.gianfranco];
+      if (this.gianfrancoLabel) targets.push(this.gianfrancoLabel);
+      if (this.gfBubble) targets.push(this.gfBubble);
+      this.tweens.add({ targets, alpha: 0, duration: 500 });
+      this.gianfranco.setActive(false); // ferma updateGianfranco
     }
 
     await new Promise<void>((resolve) => this.time.delayedCall(450, resolve));

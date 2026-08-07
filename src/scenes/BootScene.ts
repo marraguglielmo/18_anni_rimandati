@@ -17,13 +17,14 @@ const FONT = '"Press Start 2P", monospace';
 
 // ── DEBUG ────────────────────────────────────────────────────────────────────
 // Metti false per saltare il loader e andare subito alla schermata titolo
-const SHOW_LOADER = true;
+const SHOW_LOADER = false;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // File audio (l'utente li carica in public/assets/audio/; se mancano: silenzio)
 const AUDIO_FILES: [string, string][] = [
   // ── BGM (sottofondo persistente — tutto il gioco) ──
   ['bgm',        'assets/audio/bgm.mp3'],
+  ['presentation', 'assets/audio/presentation.mp3'], // presentazione personaggi (intro cast + selezione)
   // ── FGM situazionali ──
   ['battle',     'assets/audio/battle.mp3'],
   ['melancholy', 'assets/audio/melancholy.mp3'],
@@ -41,6 +42,7 @@ const AUDIO_FILES: [string, string][] = [
   ['teleport', 'assets/audio/teleport.wav'],
   ['warp',     'assets/audio/warp.wav'],
   ['pee',      'assets/audio/pee.wav'],
+  ['menu',     'assets/audio/menu.wav'],
   ['scontro',  'assets/audio/scontro.wav'],
   ['fanfare',  'assets/audio/fanfare.mp3'],
 ];
@@ -82,6 +84,7 @@ export class BootScene extends Phaser.Scene {
   private startText!: Phaser.GameObjects.Text;
   private started = false;
   private startBlinkTimer: Phaser.Time.TimerEvent | null = null;
+  private presMusicStart = 0; // istante (this.time.now) in cui parte la musica di presentazione
   // Riferimenti ai personaggi atterrati — usati dalla selezione personaggio
   private charRowSprites: Phaser.GameObjects.Sprite[] = [];
   private charRowLabels:  Phaser.GameObjects.Text[]   = [];
@@ -146,7 +149,7 @@ export class BootScene extends Phaser.Scene {
 
     // Hint comandi di sistema (in alto a destra, discreto)
     this.add
-      .text(GAME_WIDTH - 4, 4, 'P PAUSA · M AUDIO', {
+      .text(GAME_WIDTH - 4, 4, 'P PAUSA', {
         fontFamily: FONT,
         fontSize: '5px',
         color: '#ffffff',
@@ -427,7 +430,7 @@ export class BootScene extends Phaser.Scene {
 
       // 1 secondo di pausa al 100%, poi compare il prompt con lampeggio lento
       this.time.delayedCall(1_000, () => {
-        txt.setAlpha(0).setText('Clicca per continuare').setColor('#dddddd');
+        txt.setAlpha(0).setText('Premi per continuare').setColor('#dddddd');
         this.tweens.add({
           targets: txt,
           alpha: 1,
@@ -480,34 +483,55 @@ export class BootScene extends Phaser.Scene {
     this.started = true;
     this.startBlinkTimer?.remove();
     this.startBlinkTimer = null;
-    this.startText.setAlpha(0).setVisible(true);
-    AudioManager.get().playBgMusic(this, 'bgm', 0.3);
-    this.showIntroCards();
+    // Musica dedicata alla presentazione dei personaggi (dissolvenza in entrata)
+    AudioManager.get().playBgMusic(this, 'presentation', 0.4);
+    this.presMusicStart = this.time.now; // ancora temporale per sincronizzare le card a tempo
+
+    // Conferma del click: suono discreto (niente flash)
+    if (this.cache.audio.exists('confirm')) this.sound.play('confirm', { volume: 0.5 });
+    this.tweens.add({ targets: this.startText, alpha: 0, duration: 200 });
+
+    // Dissolvenza morbida a nero, poi un attimo di respiro, poi il cast
+    const veil = this.add
+      .rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000)
+      .setOrigin(0).setDepth(399).setAlpha(0);
+    this.tweens.add({
+      targets: veil, alpha: 1, duration: 900, ease: 'Sine.easeInOut',
+      onComplete: () => this.time.delayedCall(320, () => this.showIntroCards(veil)),
+    });
   }
 
   // ─────────────────────────────────────── card cinematiche stile Pokemon/DBZ
 
-  private showIntroCards(): void {
-    const CARD_MS  = 3500;   // durata per personaggio (+2s rispetto al default)
-    const GAP_MS   = 0;      // pausa tra card (le card si sovrappongono di 150ms di fade)
-    const START_MS = 200;
+  private showIntroCards(veil: Phaser.GameObjects.Rectangle): void {
+    // ─── Sincronizzazione con la musica di presentazione ────────────────────
+    // Un personaggio "esce" ogni 6.5s, a tempo con la traccia (presentation.mp3).
+    // Tutti i tempi sono ANCORATI a this.presMusicStart (istante di play della
+    // musica) così non si accumula sfasamento lungo la sequenza.
+    const INTERVAL_MS = 6500;   // intervallo tra un personaggio e il successivo
+    const FIRST_MS    = 6500;   // quando ESCE il 1° personaggio, dall'inizio musica
+                                // ↑ regola solo QUESTO se il 1° è in anticipo/ritardo
+    const CARD_MS     = INTERVAL_MS; // ogni card resta finché non entra la prossima
 
     // Pre-genera tutte le texture
     CHAR_IDS.forEach(id => generateSpriteTexture(this, id, CHAR_CONFIGS[id]));
 
-    // Velo scuro che copre il titolo durante la sequenza
-    const veil = this.add
-      .rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000)
-      .setOrigin(0).setDepth(399).setAlpha(0);
-    this.tweens.add({ targets: veil, alpha: 1, duration: 220 });
+    // Il velo (già a schermo pieno dalla dissolvenza del titolo) resta come sfondo.
 
-    // Mostra le card in sequenza
+    // Tempo già trascorso dall'inizio della musica (velo 900ms + respiro 320ms…)
+    const sinceMusic = this.time.now - this.presMusicStart;
+
+    // Mostra le card in sequenza, ciascuna agganciata al proprio istante musicale
     CHAR_IDS.forEach((id, i) => {
-      this.showOneCard(id, START_MS + i * (CARD_MS + GAP_MS), CARD_MS);
+      const fireAt = FIRST_MS + i * INTERVAL_MS;        // dall'inizio musica
+      const delay  = Math.max(0, fireAt - sinceMusic);  // relativo ad ora
+      this.showOneCard(id, delay, CARD_MS);
     });
 
-    // Dopo tutte le card: personaggi nella riga + velo via + click 2
-    const afterAll = START_MS + CHAR_IDS.length * (CARD_MS + GAP_MS) + 250;
+    // Dopo l'ultima card (sul beat successivo): personaggi nella riga + velo via
+    const lastFireAt = FIRST_MS + (CHAR_IDS.length - 1) * INTERVAL_MS;
+    const afterMusic = lastFireAt + INTERVAL_MS;        // beat dopo il 4° personaggio
+    const afterAll   = Math.max(0, afterMusic - sinceMusic);
     this.time.delayedCall(afterAll, () => {
       // Il velo svanisce subito; i personaggi atterrano a partire da 400ms
       this.tweens.add({
@@ -515,6 +539,14 @@ export class BootScene extends Phaser.Scene {
         onComplete: () => veil.destroy(),
       });
       this.placeCharactersRow(400);  // Dragon Ball landing, 500ms gap tra personaggi
+
+      // Fine presentazione: la canzone sfuma e torna il sottofondo generale (bgm).
+      // Parte 1s prima della selezione (a 1700ms invece di 2700ms).
+      this.time.delayedCall(1700, () => {
+        AudioManager.get().fadeOutBgMusic(1600, () => {
+          AudioManager.get().playBgMusic(this, 'bgm', 0.3);
+        });
+      });
 
       // Dopo che tutti i personaggi sono atterrati → selezione personaggio
       // 4 chars × 500ms gap + 350ms drop + ~400ms effetti ≈ 2700ms
@@ -530,12 +562,7 @@ export class BootScene extends Phaser.Scene {
     const D   = 400; // base depth
 
     this.time.delayedCall(delay, () => {
-      // ── SFX: fanfare di presentazione ────────────────────────────────────
-      if (this.cache.audio.exists('fanfare')) {
-        this.sound.play('fanfare', { volume: 0.5 });
-      } else {
-        this.sound.play('scontro', { volume: 0.4 });
-      }
+      // Nessuno stinger sulle card: durante la presentazione si sente solo la musica.
 
       // ── Sfondo colorato ──────────────────────────────────────────────────
       const bg = this.add
@@ -726,7 +753,7 @@ export class BootScene extends Phaser.Scene {
           duration: 350,
           ease: 'Quad.easeIn',
           onComplete: () => {
-            // SFX: impatto atterraggio
+            // SFX: impatto atterraggio (stile DBZ) — resta, sopra la canzone
             this.sound.play('hit', { volume: 0.55 });
             // Camera shake
             this.cameras.main.shake(110, 0.003);
@@ -881,11 +908,13 @@ export class BootScene extends Phaser.Scene {
       const prev = selIdx;
       selIdx = (selIdx - 1 + CHAR_IDS.length) % CHAR_IDS.length;
       applySelection(selIdx, prev);
+      AudioManager.get().playSFX(this, 'menu', 0.5);   // blip da menu
     };
     const onRight = (): void => {
       const prev = selIdx;
       selIdx = (selIdx + 1) % CHAR_IDS.length;
       applySelection(selIdx, prev);
+      AudioManager.get().playSFX(this, 'menu', 0.5);   // blip da menu
     };
     const onEnter = (): void => {
       leftKey.off('down', onLeft);
@@ -905,6 +934,9 @@ export class BootScene extends Phaser.Scene {
 
   /** Schermata nera con il punchline, poi avvia il prologo. */
   private showFakeChoiceScreen(): void {
+    // Fine presentazione: sfuma via la musica di presentazione (dissolvenza in uscita)
+    AudioManager.get().fadeOutBgMusic(1500);
+
     const overlay = this.add
       .rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x000000)
       .setOrigin(0).setDepth(5000).setAlpha(0);
@@ -913,7 +945,7 @@ export class BootScene extends Phaser.Scene {
       targets: overlay, alpha: 1, duration: 600,
       onComplete: () => {
         const txt = this.add
-          .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'non scegli tu\ncon chi iniziare.', {
+          .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'non scegli tu\ncon chi iniziare coglione.', {
             fontFamily: FONT, fontSize: '8px', color: '#dddddd',
             align: 'center', lineSpacing: 8,
           })
@@ -965,7 +997,7 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(3001);
     const hint = this.add
-      .text(GAME_WIDTH / 2, GAME_HEIGHT - 22, 'click per continuare', {
+      .text(GAME_WIDTH / 2, GAME_HEIGHT - 22, 'premi per continuare', {
         fontFamily: FONT,
         fontSize: '6px',
         color: '#555555',

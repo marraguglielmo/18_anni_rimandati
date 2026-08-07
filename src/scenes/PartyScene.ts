@@ -257,6 +257,14 @@ const UMBERTO_DANCE_LINES: DialogueLine[] = [
   { speaker: 'bubi', text: 'Ok. Vai. Ti guardo. Vediamo che cazzo combini.' },
 ];
 
+// Umberto & Cece sulla schermata Just Dance, un attimo prima che parta la musica
+const DANCE_PREGAME_LINES: DialogueLine[] = [
+  { speaker: 'cece', text: 'Umberto. Sei sicuro? Questa roba finisce nel video del 18esimo.' },
+  { speaker: 'umberto', text: 'Cece, metti la canzone. Stasera spacco la pista.' },
+  { speaker: 'cece', text: 'Va bene... ma poi non dire che non ti avevo avvisato.' },
+  { speaker: 'umberto', text: 'Zitto e parti col pezzo. Guardami.' },
+];
+
 
 const RETURN_FROM_PONG_LINES: DialogueLine[] = [
   { speaker: 'umberto', text: '...ok. Abbiamo perso. Ma sto benissimo. *hic*' },
@@ -266,9 +274,9 @@ const RETURN_FROM_PONG_LINES: DialogueLine[] = [
   { speaker: 'umberto', text: '...sta minte la musica' },
   { speaker: 'bubi', text: 'E chira musica la chiami??' },
   { speaker: 'stefano', text: 'Oh babbi... come cazzo funziona sta merda??' },
-  { speaker: 'bubi', text: 'Ti sfido a ballare. Uno contro uno. Pista là.' },
+  { speaker: 'bubi', text: 'Vidimu se la faci cu te movi... a pista sta ddai.' },
   { speaker: 'umberto', text: 'Io? Ballare? Bubi, io BALLO BENISSIMO.' },
-  { speaker: 'bubi', text: 'Allora vacci. Ti aspetto.' },
+  { speaker: 'bubi', text: 'Sciamu pampasciune.' },
 ];
 
 // Umberto crolla dopo 1:30 di danza
@@ -1885,6 +1893,17 @@ export class PartyScene extends Phaser.Scene {
       this.tweens.add({ targets: fl, alpha: 0, duration: 230,
         onComplete: () => fl.destroy() });
     };
+
+    // ── Dialoghi Umberto & Cece prima della musica ──────────────────────────
+    // La schermata Just Dance è già a video; alziamo il box dialoghi sopra
+    // l'overlay (depth 2000+) e attendiamo che l'utente li faccia scorrere.
+    const dlgUi = this.dialogue.uiContainer;
+    const prevDlgDepth = dlgUi.depth;
+    dlgUi.setDepth(2050);
+    await new Promise<void>(resolve => {
+      this.dialogue.start({ lines: DANCE_PREGAME_LINES, onComplete: resolve });
+    });
+    dlgUi.setDepth(prevDlgDepth);
 
     // ── Countdown 3-2-1-GO ──────────────────────────────────────────────────
     for (const label of ['3', '2', '1', 'GO!']) {

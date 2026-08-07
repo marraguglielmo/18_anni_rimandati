@@ -57,6 +57,10 @@ export class StradaScene extends Phaser.Scene {
 
   preload(): void {
     loadPortraits(this, ['bubi', 'umberto', 'chiara', 'alessandra']);
+    // Foto reale di Alessandra come avatar del dialogo (speaker 'alessandra marzo').
+    // Caricata sotto la chiave cercata dalla DialogueSystem: così il volto
+    // procedurale sotto (fallback) viene saltato dal guard `!textures.exists`.
+    this.load.image('portrait-alessandra marzo-png', 'assets/sprites/alessandra.png');
   }
 
   create(): void {

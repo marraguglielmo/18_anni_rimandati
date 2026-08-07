@@ -204,6 +204,7 @@ export class BiciScene extends Phaser.Scene {
   private speedLinesTile?: Phaser.GameObjects.TileSprite;
   private thoughtTimer?: Phaser.Time.TimerEvent;
   private mockTimer?: Phaser.Time.TimerEvent;
+  private gfStreaking = false; // Gianfranco sfreccia sullo sfondo durante l'intro
 
   // stato minigioco
   private mgActive = false;
@@ -238,7 +239,7 @@ export class BiciScene extends Phaser.Scene {
   }
 
   preload(): void {
-    loadPortraits(this, [...RIDER_SETUP.map(([id]) => id), ...PEOPLE.map((p) => p.id)]);
+    loadPortraits(this, [...RIDER_SETUP.map(([id]) => id), ...PEOPLE.map((p) => p.id), 'gianfranco']);
   }
 
   create(): void {
@@ -259,6 +260,11 @@ export class BiciScene extends Phaser.Scene {
     this.createSpeedLinesTexture();
     this.spawnRiders();
     for (const p of PEOPLE) generateSpriteTexture(this, p.id, CHAR_CONFIGS[p.id]);
+
+    // Gianfranco sfreccia sullo sfondo mentre vanno i dialoghi dell'intro
+    generateSpriteTexture(this, 'gianfranco', CHAR_CONFIGS['gianfranco']);
+    this.gfStreaking = true;
+    this.startGianfrancoStreaks();
 
     this.dialogue = new DialogueSystem(this);
     this.questHUD = new QuestHUD(this, GAME_WIDTH / 2 + UI_OFF_X, 40 + UI_OFF_Y);
@@ -401,6 +407,7 @@ export class BiciScene extends Phaser.Scene {
   // -------------------------------------------------------- minigioco
 
   private playMinigame(): Promise<void> {
+    this.gfStreaking = false; // fine intro: basta sfrecciate di sfondo
     // zoom leggero per il senso d'azione
     this.cameras.main.zoomTo(RENDER_SCALE * 1.15, 600, 'Sine.easeInOut');
     this.trande.bob?.remove();
@@ -1712,6 +1719,69 @@ export class BiciScene extends Phaser.Scene {
       };
       this.riders.push(rider);
       if (id === 'trande') this.trande = rider;
+    });
+  }
+
+  // ---------------------------------------- Gianfranco di sfondo (sfreccia)
+
+  /** Un SOLO passaggio di Gianfranco, 5 secondi dopo l'inizio della scena. */
+  private startGianfrancoStreaks(): void {
+    this.time.delayedCall(5000, () => {
+      if (this.gfStreaking) this.streakGianfranco();
+    });
+  }
+
+  /**
+   * Fa attraversare lo schermo a Gianfranco in bici, IDENTICO a come appare in
+   * piazza (stesso disegno + sprite), sulla strada dietro i personaggi. Va
+   * lento così si vede bene. Decorativo: non tocca dialoghi/gameplay, no nuvolette.
+   */
+  private streakGianfranco(): void {
+    // ── Bici disegnata come in PiazzaScene ──────────────────────────────────
+    const mkWheel = (): Phaser.GameObjects.Graphics => {
+      const w = this.add.graphics();
+      w.lineStyle(1.5, 0x1a1a1a); w.strokeCircle(0, 0, 4);      // copertone
+      w.lineStyle(1, 0x888888);
+      w.lineBetween(-4, 0, 4, 0); w.lineBetween(0, -4, 0, 4);   // raggi
+      w.fillStyle(0x333333); w.fillCircle(0, 0, 1.2);           // mozzo
+      return w;
+    };
+    const wheelL = mkWheel().setPosition(-9, 4);
+    const wheelR = mkWheel().setPosition(9, 4);
+
+    const frame = this.add.graphics();
+    frame.lineStyle(2, 0xdd4455);
+    frame.lineBetween(-9, 4, 2, -3);    // tubo obliquo
+    frame.lineBetween(-9, 4, -2, -6);   // tubo sella
+    frame.lineBetween(-2, -6, 5, -3);   // tubo orizzontale
+    frame.lineBetween(5, -3, 9, 4);     // forcella anteriore
+    frame.lineBetween(2, -3, -2, -6);   // reggisella
+    frame.lineStyle(2, 0x333333);
+    frame.lineBetween(5, -3, 6, -8);    // stelo manubrio
+    frame.lineBetween(3, -8, 8, -8);    // manubrio
+    frame.fillStyle(0x222222);
+    frame.fillRect(-4, -7, 5, 2);       // sella
+    frame.lineStyle(1.5, 0x444444);
+    frame.lineBetween(-1, 4, -3, 6);    // pedivella
+
+    // Sprite intero con gambe (come in piazza)
+    const sprite = this.add.sprite(-1, -10, 'char-gianfranco', 1).setScale(CHAR_SCALE);
+    sprite.play('gianfranco-walk-right');
+
+    // Sulla strada, alla quota dei ciclisti (ROAD_Y-8), ma dietro di loro
+    // (depth 150 < ROAD_Y+i ≈ 198). Scala piena come in piazza → ben visibile.
+    const cont = this.add.container(-30, ROAD_Y - 8, [wheelL, wheelR, frame, sprite])
+      .setDepth(150);
+
+    const wt = this.tweens.add({
+      targets: [wheelL, wheelR], angle: 360, duration: 460, repeat: -1, ease: 'Linear',
+    });
+
+    // Attraversamento LENTO così si vede bene
+    this.tweens.add({
+      targets: cont, x: GAME_WIDTH + 40,
+      duration: Phaser.Math.Between(2600, 3400), ease: 'Linear',
+      onComplete: () => { wt.remove(); cont.destroy(); },
     });
   }
 

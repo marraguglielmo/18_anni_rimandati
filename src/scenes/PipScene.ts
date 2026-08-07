@@ -263,7 +263,7 @@ export class PipScene extends Phaser.Scene {
     const rows = [
       { y: -34, txt: 'Umberto ha una necessità', col: '#ffffff', sz: '6px' },
       { y: -24, txt: 'URGENTISSIMA!',            col: '#ff6666', sz: '6px' },
-      { y:  -6, txt: 'Punta il mirino e clicca', col: '#ffffff', sz: '6px' },
+      { y:  -6, txt: 'Punta il mirino e premi', col: '#ffffff', sz: '6px' },
       { y:   4, txt: 'per sparare la pipì.',      col: '#ffdd44', sz: '6px' },
       { y:  22, txt: `Riempi la barra: ${GOAL} centri!`, col: '#66ff99', sz: '6px' },
     ];
@@ -274,7 +274,7 @@ export class PipScene extends Phaser.Scene {
       }).setOrigin(0, 0.5).setDepth(101));
     }
 
-    const prompt = this.add.text(cx, y0 + PH - 12, '– CLICCA PER PISCIARE –', {
+    const prompt = this.add.text(cx, y0 + PH - 12, '– PREMI PER PISCIARE –', {
       fontFamily: FONT, fontSize: '7px', color: '#ffdd44',
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(101);

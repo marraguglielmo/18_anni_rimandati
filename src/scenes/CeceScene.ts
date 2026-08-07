@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config';
 import { DialogueSystem, type DialogueLine } from '../systems/DialogueSystem';
 import { TransitionSystem } from '../systems/TransitionSystem';
+import { AudioManager } from '../systems/AudioManager';
 import {
   CHAR_CONFIGS,
   CHAR_SCALE,
@@ -34,67 +35,67 @@ const EXTRA_CONFIGS = [
 
 const WALK_LINES: DialogueLine[] = [
   { speaker: 'umberto', text: 'Cece... chianu... addu cazzu sciamu?' },
-  { speaker: 'trande',  text: 'Mena pe la mamma maria mi fa male tutto.' },
+  { speaker: 'trande',  text: 'Mena pe la mamma maria mi fa male tutto' },
   { speaker: 'bubi',    text: 'Trande ma se si pampasciune' },
-  { speaker: 'trande',  text: 'Non è colpa mia se quella bici di merda non aveva i freni.' },
+  { speaker: 'trande',  text: 'Non è colpa mia se quella bici di merda non aveva i freni' },
 ];
 
 // Umberto ha urgenza → minigioco pipì
 const PIP_SETUP_LINES: DialogueLine[] = [
-  { speaker: 'umberto', text: 'Raga aspettate. *hic* Ho un problema urgente.' },
-  { speaker: 'bubi',    text: 'Tie si nu problema.' },
+  { speaker: 'umberto', text: 'Raga aspettate. *hic* Ho un problema urgente' },
+  { speaker: 'bubi',    text: 'Tie si nu problema' },
   { speaker: 'umberto', text: 'Devo pisciare, accompagnatemi *hic*' },
-  { speaker: 'trande',  text: 'Sine sciamu ca nu te manteni tisu.' },
-  { speaker: 'bubi',  text: 'Pisciu puru ieu.' },
-  { speaker: 'cece',  text: 'Vabe noi entriamo, quando finite entrate.' },
+  { speaker: 'trande',  text: 'Sine sciamu ca nu te manteni tisu' },
+  { speaker: 'bubi',  text: 'Pisciu puru ieu' },
+  { speaker: 'cece',  text: 'Vabe noi entriamo, quando finite entrate' },
 ];
 
 // Dopo il minigioco: confusione per essere stati lasciati fuori
 const POST_PIP_LINES: DialogueLine[] = [
-  { speaker: 'bubi',    text: 'Ou cujune ta pisciatu susu.' },
+  { speaker: 'bubi',    text: 'Ou cujune ta pisciatu susu' },
   { speaker: 'umberto', text: '*hic* È solo birra *hic*' },
-  { speaker: 'trande',  text: 'Vabe entriamo ragazzi.' },
-  { speaker: 'bubi',    text: 'Sciamu.' },
+  { speaker: 'trande',  text: 'Vabe entriamo ragazzi' },
+  { speaker: 'bubi',    text: 'Sciamu' },
 ];
 
 const SETUP_LINES: DialogueLine[] = [
   { speaker: 'guglielmo', text: '*dall\'interno* Veloci veloci!' },
-  { speaker: 'bubi',   text: 'Ci sta fecene??.' },
-  { speaker: 'trande',    text: 'Ve lo dico io: robe da froci.' },
+  { speaker: 'bubi',   text: 'Ci sta fecene??' },
+  { speaker: 'trande',    text: 'Ve lo dico io: robe da froci' },
 ];
 
 const ENTER_LINES: DialogueLine[] = [
-  { speaker: 'cece', text: 'Pronti.' },
-  { speaker: 'cece', text: 'Entrate.' },
+  { speaker: 'cece', text: 'Pronti' },
+  { speaker: 'cece', text: 'Entrate' },
 ];
 
 
 const ARRIVE_LINES: DialogueLine[] = [
   { speaker: 'umberto',   text: '...' },
-  { speaker: 'bubi',      text: '...Cece.' },
+  { speaker: 'bubi',      text: '...Cece' },
   { speaker: 'trande',    text: 'La torta... cazzo significa 18??' },
-  { speaker: 'cece',      text: 'Pensavate ci scordassimo di voi, eh?? Impossibile, amici miei.' },
+  { speaker: 'cece',      text: 'Pensavate ci scordassimo di voi, eh?? Impossibile, amici miei' },
 ];
 
 const SPEECH_LINES: DialogueLine[] = [
-  { speaker: 'cece',      text: 'Sei anni fa la pandemia ci ha fregato. Stasera recuperiamo tutto.' },
-  { speaker: 'cece',      text: 'Niente festa, niente video? Adesso ci pensa Cece.' },
+  { speaker: 'cece',      text: 'Sei anni fa la pandemia ci ha fregato. Stasera recuperiamo tutto' },
+  { speaker: 'cece',      text: 'Niente festa, niente video? Adesso ci pensa Cece' },
   { speaker: 'aniceto',   text: 'Contenti porco dio??' },
   { speaker: 'guglielmo', text: 'Avete visto che alla fine ci siamo riusciti?' },
   { speaker: 'umberto',   text: 'Raga. Questa è la serata più bella della mia vita. Davvero...' },
-  { speaker: 'bubi',      text: 'Porco dio... top 3 momenti della mia vita.' },
+  { speaker: 'bubi',      text: 'Porco dio... top 3 momenti della mia vita' },
   { speaker: 'trande',    text: 'Grazie ragazzi era ora eh!!' },
-  { speaker: 'bubi',      text: 'Cittu Trande.' },
-  { speaker: 'cece',      text: 'Adesso... si soffia.' },
+  { speaker: 'bubi',      text: 'Cittu Trande' },
+  { speaker: 'cece',      text: 'Adesso... si soffia' },
 ];
 
 const CECE_TO_CAMERA: DialogueLine[] = [
   { speaker: 'cece', text: '...' },
-  { speaker: 'cece', text: 'E tu.' },
-  { speaker: 'cece', text: 'Grazie per aver giocato con noi.' },
-  { speaker: 'cece', text: 'Davvero.' },
-  { speaker: 'cece', text: 'Senza di te non esisterebbe niente di tutto questo.' },
-  { speaker: 'cece', text: 'Ci vediamo alla prossima festa.' },
+  { speaker: 'cece', text: 'E tu' },
+  { speaker: 'cece', text: 'Grazie per aver giocato con noi' },
+  { speaker: 'cece', text: 'Davvero' },
+  { speaker: 'cece', text: 'Senza di te non esisterebbe niente di tutto questo' },
+  { speaker: 'cece', text: 'Ci vediamo alla prossima festa' },
 ];
 
 // ─── Scena ───────────────────────────────────────────────────────────────────
@@ -106,6 +107,8 @@ export class CeceScene extends Phaser.Scene {
   private crowdSprites: Phaser.GameObjects.Sprite[] = [];
   /** Camera UI separata per il dialogo durante lo zoom su Cece. */
   private uiCam?: Phaser.Cameras.Scene2D.Camera;
+  /** Grafica dell'ESTERNO (facciata + porta): va distrutta entrando nell'interno. */
+  private exteriorEls: Phaser.GameObjects.GameObject[] = [];
 
   constructor() {
     super('CeceScene');
@@ -119,6 +122,11 @@ export class CeceScene extends Phaser.Scene {
   }
 
   create(): void {
+    // La scena può ripartire (prePip → after-pip) riusando la stessa istanza:
+    // azzera lo stato tracciato per non trascinare riferimenti vecchi.
+    this.exteriorEls = [];
+    this.crowdSprites = [];
+
     const cam = this.cameras.main;
     cam.setZoom(2);
     cam.centerOn(W / 2, H / 2);
@@ -327,6 +335,9 @@ export class CeceScene extends Phaser.Scene {
     rightLeaf.fillStyle(0x7a4020, 1); rightLeaf.fillRect(-HALF + 1, 2, HALF - 3, DOOR_H - 4);
     rightLeaf.fillStyle(0xffcc44, 1); rightLeaf.fillRect(-HALF + 2, Math.round(DOOR_H / 2), 4, 3); // maniglia
 
+    // Registrati come grafica esterna → distrutta entrando nell'interno
+    this.exteriorEls.push(light, leftLeaf, rightLeaf);
+
     // Le ante scalano in X attorno al proprio cardine: scaleX 1 = chiusa, ~0 = aperta.
     return {
       open: () => Promise.all([
@@ -494,6 +505,9 @@ export class CeceScene extends Phaser.Scene {
   // ─── Fase 3: interno — prospettiva dall'alto, torta al centro ────────────────
 
   private async interiorReveal(): Promise<void> {
+    this.clearExterior(); // via facciata + porta: niente residui sopra l'interno
+    // Canzone sentimentale della scena finale in casa (crossfade dal BGM globale)
+    AudioManager.get().playFgMusic(this, 'finale', 0.55);
     this.drawInteriorTopDown();
 
     // Torta gigante al centro (già visibile quando i festeggiati entrano)
@@ -1054,6 +1068,19 @@ export class CeceScene extends Phaser.Scene {
     const lampGlow = this.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(3);
     lampGlow.fillStyle(0xffee88, 1); lampGlow.fillCircle(90, 126, 26); lampGlow.setAlpha(0.12);
     this.tweens.add({ targets: lampGlow, alpha: 0.18, duration: 1800, yoyo: true, repeat: -1 });
+
+    // Registra tutta la facciata come grafica esterna → distrutta entrando dentro
+    this.exteriorEls.push(g, doorLight, lampGlow);
+  }
+
+  /** Distrugge la grafica dell'esterno (facciata + porta) prima dell'interno,
+   *  così nessuna anta/luce resta appesa sopra la scena della torta. */
+  private clearExterior(): void {
+    for (const el of this.exteriorEls) {
+      this.tweens.killTweensOf(el);
+      el.destroy();
+    }
+    this.exteriorEls = [];
   }
 
   // ─── Grafica: interno top-down (come in piazza) ────────────────────────────

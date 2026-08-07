@@ -27,16 +27,16 @@ const CUP_H = 13;
 const MAX_ROUNDS = 7; // sicurezza: il rigging chiude prima
 
 const INTRO_LINES: DialogueLine[] = [
-  { speaker: 'guglielmo', text: 'Ecco i perdenti. Un tiro a testa, si gioca finché c\'è da bere.' },
-  { speaker: 'aniceto', text: 'Chi becca il bicchiere, l\'altro beve. Sciamu.' },
+  { speaker: 'guglielmo', text: 'Ecco i perdenti. Un tiro a testa, si gioca finché c\'è da bere' },
+  { speaker: 'aniceto', text: 'Chi becca il bicchiere, l\'altro beve. Sciamu' },
   { speaker: 'umberto', text: 'Comincio io *hihihihi*' },
 ];
 
 const OUTRO_LINES: DialogueLine[] = [
-  { speaker: 'guglielmo', text: 'Sucati cujuni.' },
+  { speaker: 'guglielmo', text: 'Sucati cujuni' },
   { speaker: 'guglielmo', text: 'Umberto t\'apposto?' },
   { speaker: 'umberto', text: 'STO BENISSIMO. *hic* Perché ci sono due Trande?' },
-  { speaker: 'trande', text: 'Ok che figura di merda... si torna a casa. Appoggiati a me che te l\'appoggio.' },
+  { speaker: 'trande', text: 'Ok che figura di merda... si torna a casa. Appoggiati a me che te l\'appoggio' },
   { speaker: 'aniceto', text: 'Festa bellissima porcaccio il dio' },
 ];
 
@@ -44,7 +44,7 @@ const SPECTATORS = ['riccardo', 'cece', 'stefano', 'ilaria', 'cosimino'];
 
 const CROWD_LINES: Record<'hit' | 'miss' | 'drink', string[]> = {
   hit: ['EEEEEH!', 'Crazy', 'Dentro!', 'Pazzesco!', 'Giocone!', 'Olè!'],
-  miss: ['Buuuu!', 'Mia nonna tira meglio!', 'Aria!', 'Che pippa!', 'Imbarazzante.', 'Porca puttana che merda'],
+  miss: ['Buuuu!', 'Mia nonna tira meglio!', 'Aria!', 'Che pippa!', 'Imbarazzante', 'Porca puttana che merda'],
   drink: ['GIU! GIU! GIU!', 'Umbe\' vacci piano!', 'Un altro!', 'Alla goccia'],
 };
 
@@ -154,13 +154,13 @@ export class BeerPongScene extends Phaser.Scene {
 
       // 1. UMBERTO (interattivo) — il più ubriaco apre sempre
       if (this.cupsAlive(this.enemyCups) > 0) {
-        await this.showMessage('Tira UMBERTO! Trascina dal suo braccio e rilascia.');
+        await this.showMessage('Tira UMBERTO! Trascina dal suo braccio e rilascia');
         this.zoomToUmberto();
         const hit = await this.playerThrow();
         this.resetZoom();
         await this.resolveThrow('umberto', hit, 'enemy');
       } else {
-        await this.showMessage('Niente più bersagli per UMBERTO... che beve in attesa.');
+        await this.showMessage('Niente più bersagli per UMBERTO... che beve in attesa');
         this.addDrink('umberto');
         this.crowdReact('drink');
       }
@@ -190,7 +190,7 @@ export class BeerPongScene extends Phaser.Scene {
     this.burstConfetti();
     await this.showMessage('GUGLIELMO e ANICETO vincono la sfida!');
     this.crowdReact('hit');
-    await this.showMessage('UMBERTO, per ripicca, svuota anche i bicchieri rimasti sul tavolo.');
+    await this.showMessage('UMBERTO, per ripicca, svuota anche i bicchieri rimasti sul tavolo');
     // i bicchieri superstiti svaniscono... dentro Umberto
     for (const cup of [...this.playerCups, ...this.enemyCups]) {
       if (!cup.alive) continue;
@@ -201,7 +201,7 @@ export class BeerPongScene extends Phaser.Scene {
     this.crowdReact('drink');
     await this.showMessage('*glu glu glu*');
     this.addDrink('umberto');
-    await this.showMessage('...Ecco. Ora è ufficialmente il più ubriaco della storia.');
+    await this.showMessage('...Ecco. Ora è ufficialmente il più ubriaco della storia');
     await this.runDialogue(OUTRO_LINES);
     AudioManager.get().stopFgMusic(this); // fine beerpong → BGM torna su
     TransitionSystem.fadeToScene(this, 'PartyScene', { pongDone: true }, 1500);

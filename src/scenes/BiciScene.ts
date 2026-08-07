@@ -33,7 +33,7 @@ const RIDER_SETUP: [string, number][] = [
 const COINS_TO_WIN = 30;
 const STAR_DURATION_S = 5; // durata Super Stella (invincibile + velocità 2x)
 const SCROLL_SPEED_BASE = 155; // velocità iniziale (px/s)
-const SCROLL_SPEED_MAX = 215;  // velocità massima (ridotta per giocabilità)
+const SCROLL_SPEED_MAX = 260;  // velocità massima (tetto di sicurezza)
 const GRAVITY = 720;
 const JUMP_V = -268;
 // ------- fisica avanzata -------
@@ -109,14 +109,14 @@ const PEOPLE: { id: string; name: string; labelColor?: string }[] = [
 
 const PLAN_LINES: DialogueLine[] = [
   { speaker: 'bubi', text: 'Allora... mancane sordi?' },
-  { speaker: 'guglielmo', text: 'Si, dobbiamo ancora passare da Lerry e Stefano.' },
+  { speaker: 'guglielmo', text: 'Si, dobbiamo ancora passare da Lerry e Stefano' },
   { speaker: 'ilaria', text: 'Regà quando facciamo spesa?' },
-  { speaker: 'aniceto', text: 'Andiamo a pomeriggio, alla lista ci pensa cece.' },
+  { speaker: 'aniceto', text: 'Andiamo a pomeriggio, alla lista ci pensa cece' },
   { speaker: 'cece', text: 'Sisi tranquilli, il problema sono gli alcolici' },
-  { speaker: 'ilaria', text: 'Vabe scialla ce li prende Lerry.' },
+  { speaker: 'ilaria', text: 'Vabe scialla ce li prende Lerry' },
   { speaker: 'ilaria', text: 'Per la musica invece?' },
-  { speaker: 'bubi', text: 'Playlist pronta da tre settimane.' },
-  { speaker: 'trande', text: 'Dai ca sta sira ne scasciamu.' },
+  { speaker: 'bubi', text: 'Playlist pronta da tre settimane' },
+  { speaker: 'trande', text: 'Dai ca sta sira ne scasciamu' },
   { speaker: 'bubi', text: 'Ah sì? ULTIMO DA ILARIA È FROCIO!' },
 ];
 
@@ -126,10 +126,10 @@ const ALONE_LINES: DialogueLine[] = [
 
 const HELP_LINES: DialogueLine[] = [
   { speaker: 'bubi', text: 'TRANDE PORCO DIO!! Tutto bene?!' },
-  { speaker: 'trande', text: '...la schiena. Non sento la schiena.' },
-  { speaker: 'guglielmo', text: '*trattiene le risate* Scusa, scusa... AHAHAH.' },
-  { speaker: 'ilaria', text: 'Non ridete, idioti! ...ammazza che botta, eh.' },
-  { speaker: 'trande', text: 'Mi sa che mi sono rotto una vertebra. Sul serio.' },
+  { speaker: 'trande', text: '...la schiena. Non sento la schiena' },
+  { speaker: 'guglielmo', text: '*trattiene le risate* Scusa, scusa... AHAHAH' },
+  { speaker: 'ilaria', text: 'Non ridete, idioti! ...ammazza che botta, eh' },
+  { speaker: 'trande', text: 'Mi sa che mi sono rotto una vertebra. Sul serio' },
   { speaker: 'aniceto', text: 'Si nu pampasciune' },
   { speaker: 'cece', text: "AHAHAHAH ogni volta che vedo questa scena mi piscio de risi",},
   { speaker: 'trande', text: "Cece ma che cazzu dici? È la prima volta che succede...",},
@@ -146,7 +146,7 @@ const MOCK_LINES = [
 ];
 
 const DOCTOR_ARRIVES_LINES: DialogueLine[] = [
-  { speaker: 'soccorritore', text: 'Oh! Serve aiuto?! Sono un medico.' },
+  { speaker: 'soccorritore', text: 'Oh! Serve aiuto?! Sono un medico' },
 ];
 
 const DISMISS_DOCTOR_LINES: DialogueLine[] = [
@@ -710,9 +710,9 @@ export class BiciScene extends Phaser.Scene {
           yoyo: true,
           ease: 'Quad.easeOut',
         });
-        // difficoltà progressiva: +15 px/s ogni 2 monete
+        // difficoltà progressiva: +18 px/s ogni 3 monete (crescita un po' più ripida)
         this.scrollSpeed = Math.min(
-          SCROLL_SPEED_BASE + Math.floor(this.mgCoins / 3) * 9,
+          SCROLL_SPEED_BASE + Math.floor(this.mgCoins / 3) * 18,
           SCROLL_SPEED_MAX
         );
         if (this.mgCoins >= COINS_TO_WIN) this.winMinigame();

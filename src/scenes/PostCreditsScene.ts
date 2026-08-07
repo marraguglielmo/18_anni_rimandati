@@ -40,10 +40,10 @@ const CECE_ARRIVE: DialogueLine[] = [
 
 /** Le 5 risposte del gruppo (placeholder: le scriverai tu). */
 const RESPONSES: DialogueLine[] = [
-  { speaker: 'trande',    text: 'Io voglio la mamma.' },
+  { speaker: 'trande',    text: 'Io voglio la mamma' },
   { speaker: 'guglielmo', text: 'Cece ma tu già correvi?' },
-  { speaker: 'pietro',    text: 'Vagnoni sciamune a casa.' },
-  { speaker: 'aniceto',   text: 'Ahahahah palle nel culo.' },
+  { speaker: 'pietro',    text: 'Vagnoni sciamune a casa' },
+  { speaker: 'aniceto',   text: 'Ahahahah palle nel culo' },
   { speaker: 'stefano',   text: 'Figa che è sta merda?' },
 ];
 

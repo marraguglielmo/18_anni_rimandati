@@ -6,11 +6,11 @@ import { TransitionSystem } from '../systems/TransitionSystem';
 const TEST_LINES = [
   {
     speaker: 'bubi',
-    text: 'Porcodiddio vagnoni, siamo gli unici senza il video del 18esimo.',
+    text: 'Porcodiddio vagnoni, siamo gli unici senza il video del 18esimo',
   },
   {
     speaker: 'umberto',
-    text: 'È un vuoto assurdo. Senza quel video è come se non fossimo mai diventati maggiorenni.',
+    text: 'È un vuoto assurdo. Senza quel video è come se non fossimo mai diventati maggiorenni',
   },
   {
     speaker: 'cece',

@@ -28,6 +28,7 @@ const AUDIO_FILES: [string, string][] = [
   // ── FGM situazionali ──
   ['battle',     'assets/audio/battle.mp3'],
   ['melancholy', 'assets/audio/melancholy.mp3'],
+  ['finale',     'assets/audio/finale.mp3'],    // scena finale in casa (CeceScene, torta)
   ['bike-run',   'assets/audio/bike-run.mp3'],   // minigioco runner BiciScene
   ['tension',    'assets/audio/tension.mp3'],     // quiz milionario AulaScene
   ['beerpong',   'assets/audio/beerpong.mp3'],    // minigioco beer pong
@@ -945,7 +946,7 @@ export class BootScene extends Phaser.Scene {
       targets: overlay, alpha: 1, duration: 600,
       onComplete: () => {
         const txt = this.add
-          .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'non scegli tu\ncon chi iniziare coglione.', {
+          .text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'non scegli tu\ncon chi iniziare coglione', {
             fontFamily: FONT, fontSize: '8px', color: '#dddddd',
             align: 'center', lineSpacing: 8,
           })

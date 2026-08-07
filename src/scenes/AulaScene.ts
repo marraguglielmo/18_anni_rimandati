@@ -60,7 +60,7 @@ const DAZED_LINES: DialogueLine[] = [
 
 const TRANDE_LINES: DialogueLine[] = [
   { speaker: 'bubi', text: 'Ou Trande... ci te cappa?' },
-  { speaker: 'trande', text: '...ho solo un brutto presentimento per oggi.' },
+  { speaker: 'trande', text: '...ho solo un brutto presentimento per oggi' },
   { speaker: 'umberto', text: 'Quale presentimento?' },
   { speaker: 'umberto', text: 'Tanto ci siamo noi, cosa potrà andare storto?' },
   { speaker: 'bubi', text: 'Mamma mamma, fa me rattu li cujuni' },
@@ -158,11 +158,11 @@ const MG_INTRO_LINES: DialogueLine[] = [
   { speaker: 'cece', text: 'Visto che vi va tanto di parlare, interrogo...' },
   { speaker: 'cece', text: '...a modo mio' },
   { speaker: 'bubi', text: 'Vedi che cazzo combini Umberto? Sempre colpa tua' },
-  { speaker: 'cece', text: 'Bubi, siediti di fronte a me.' },
+  { speaker: 'cece', text: 'Bubi, siediti di fronte a me' },
   { speaker: 'cece', text: 'Benvenuti a... CHI VUOLE ESSERE MILIONARIO?' },
   { speaker: 'cece', text: 'Sono il vostro conduttore... CECE SCOTTI!' },
-  { speaker: 'umberto', text: '...questo non sta bene.' },
-  { speaker: 'trande', text: 'Glielo avevo detto io.' },
+  { speaker: 'umberto', text: '...questo non sta bene' },
+  { speaker: 'trande', text: 'Glielo avevo detto io' },
 ];
 
 const MG_BEFORE_LINES: DialogueLine[][] = [
@@ -172,22 +172,22 @@ const MG_BEFORE_LINES: DialogueLine[][] = [
   [{ speaker: 'cece', text: 'Quarta domanda! Ci credi, Bubi?' }],
   [{ speaker: 'cece', text: 'Quinta domanda. Cultura generale!' }],
   [
-    { speaker: 'cece', text: 'Sesta domanda. Centomila euro.' },
-    { speaker: 'bubi', text: 'Aspetta, questa è seria.' },
+    { speaker: 'cece', text: 'Sesta domanda. Centomila euro' },
+    { speaker: 'bubi', text: 'Aspetta, questa è seria' },
   ],
-  [{ speaker: 'cece', text: 'ULTIMA. UN. MILIONE. DI. EURO.' }],
+  [{ speaker: 'cece', text: 'ULTIMA. UN. MILIONE. DI. EURO' }],
 ];
 
 const MG_CORRECT_LINES: DialogueLine[][] = [
   [
     { speaker: 'cece', text: 'ESATTO!! Non potevo aspettarmi di meno!' },
-    { speaker: 'bubi', text: 'Era il cielo, Cece.' },
+    { speaker: 'bubi', text: 'Era il cielo, Cece' },
     { speaker: 'cece', text: 'E TU LO SAPEVI!!' },
   ],
   [{ speaker: 'cece', text: 'BRAVISSIMOOOO!! Il pancreas! Sei grande Bubi!' }],
   [
     { speaker: 'cece', text: 'Il 1989! Perfetto, lo sapevo!' },
-    { speaker: 'bubi', text: 'Ho studiato stavolta.' },
+    { speaker: 'bubi', text: 'Ho studiato stavolta' },
   ],
   [
     { speaker: 'cece', text: '206!! Due-zero-sei!! Grande!' },
@@ -195,11 +195,11 @@ const MG_CORRECT_LINES: DialogueLine[][] = [
   ],
   [
     { speaker: 'cece', text: 'Dante!! CHE CLASSE! Che giocatore!' },
-    { speaker: 'bubi', text: 'Grazie al liceo classico.' },
+    { speaker: 'bubi', text: 'Grazie al liceo classico' },
   ],
   [
     { speaker: 'cece', text: 'CANBERRA!! Non Sydney! CANBERRA!!' },
-    { speaker: 'bubi', text: 'Che culo.' },
+    { speaker: 'bubi', text: 'Che culo' },
     { speaker: 'cece', text: 'E vale lo stesso!!' },
   ],
   [
@@ -210,45 +210,45 @@ const MG_CORRECT_LINES: DialogueLine[][] = [
 
 const MG_WRONG_LINES: DialogueLine[][] = [
   [
-    { speaker: 'cece', text: 'COME?! Bubi... è il cielo. IL CIELO.' },
-    { speaker: 'bubi', text: 'Avevo dei dubbi.' },
+    { speaker: 'cece', text: 'COME?! Bubi... è il cielo. IL CIELO' },
+    { speaker: 'bubi', text: 'Avevo dei dubbi' },
     { speaker: 'cece', text: 'Dubbi sul cielo...' },
   ],
   [
     { speaker: 'cece', text: 'Ohhhh... porcodddddio. Era il pancreas!' },
-    { speaker: 'bubi', text: 'Ma nu su medico ancora Cece porcodio.' },
+    { speaker: 'bubi', text: 'Ma nu su medico ancora Cece porcodio' },
   ],
   [
     { speaker: 'cece', text: "Ahimè... era il 1989!" },
-    { speaker: 'bubi', text: "Non ho studiato bene quest'anno." },
+    { speaker: 'bubi', text: "Non ho studiato bene quest'anno" },
   ],
   [
     { speaker: 'cece', text: '206!! Come cazzo fai a non saperlo?!' },
-    { speaker: 'bubi', text: 'Nessuno lo sa a memoria.' },
+    { speaker: 'bubi', text: 'Nessuno lo sa a memoria' },
     { speaker: 'cece', text: 'IO LO SO! DUECENTO-SEI!' },
   ],
   [
     { speaker: 'cece', text: "Era Dante! La Divina Commedia!" },
-    { speaker: 'bubi', text: 'Mi sono confuso porcaccio il signore.' },
+    { speaker: 'bubi', text: 'Mi sono confuso porcaccio il signore' },
   ],
   [
     { speaker: 'cece', text: "La capitale è CANBERRA, Bubi!" },
-    { speaker: 'bubi', text: "Ce sacciu ieu." },
+    { speaker: 'bubi', text: "Ce sacciu ieu" },
     { speaker: 'cece', text: "Ci cascano tutti!" },
   ],
   [
     { speaker: 'cece', text: "H-DUE-O! Due atomi di idrogeno!" },
-    { speaker: 'bubi', text: 'Non ricordavo la formula.' },
-    { speaker: 'cece', text: "È acqua, Bubi. Acqua." },
+    { speaker: 'bubi', text: 'Non ricordavo la formula' },
+    { speaker: 'cece', text: "È acqua, Bubi. Acqua" },
   ],
 ];
 
 const MG_OUTRO_LINES: DialogueLine[] = [
   { speaker: 'cece', text: 'E con questo... la lezione è conclusa!' },
-  { speaker: 'bubi', text: 'Non ci hai insegnato niente.' },
+  { speaker: 'bubi', text: 'Non ci hai insegnato niente' },
   { speaker: 'cece', text: 'Ti sbagli. Ora sai un sacco di cose...' },
   { speaker: 'cece', text: 'Tranne una cosa che sto preparando per voi...' },
-  { speaker: 'cece', text: "Adesso non è il momento di parlarne... andiamo avanti." },
+  { speaker: 'cece', text: "Adesso non è il momento di parlarne... andiamo avanti" },
   { speaker: 'bubi', text: 'Cece con chi cazzo stai parlando??' },
 ];
 
@@ -614,14 +614,14 @@ export class AulaScene extends Phaser.Scene {
       );
     }
 
-    // ── Battuta di Umberto: nuvoletta (fumetto) sopra la sua testa ────────
+    // ── Battuta di Bubi: nuvoletta (fumetto) sopra la sua testa ───────────
     await new Promise<void>(r => this.time.delayedCall(350, r));
 
-    const ux   = OX + 240;              // Umberto è al centro (x=240)
+    const ux   = OX + 160;              // Bubi è a sinistra (x=160)
     const tipY = OY + CHAR_Y - 18;      // punta della codina, appena sopra la testa
 
     const say = el(
-      this.add.text(ux, 0, 'Vabe... dai\npe sta fiata.', {
+      this.add.text(ux, 0, 'Vabe... dai\npe sta fiata', {
         fontFamily: FONT, fontSize: '5px', color: '#20140a', align: 'center',
       })
         .setLineSpacing(2)
@@ -1030,18 +1030,18 @@ export class AulaScene extends Phaser.Scene {
       totalEarned >= 1_000_000
         ? [
             { speaker: 'cece', text: '...e Bubi porta a casa UN MILIONE DI EURO!!' },
-            { speaker: 'bubi', text: 'Non lo vedo però.' },
+            { speaker: 'bubi', text: 'Non lo vedo però' },
             { speaker: 'cece', text: '...no. Ma che soddisfazione, eh?!' },
           ]
         : totalEarned > 0
         ? [
             { speaker: 'cece', text: `...e Bubi porta a casa ${formatPrize(totalEarned)}!!` },
-            { speaker: 'bubi', text: 'Bello. Peccato che non li prendo.' },
+            { speaker: 'bubi', text: 'Bello. Peccato che non li prendo' },
             { speaker: 'cece', text: '...no. Ma che soddisfazione, eh?!' },
           ]
         : [
-            { speaker: 'cece', text: '...ma purtroppo Bubi porta a casa zero euro.' },
-            { speaker: 'bubi', text: 'Non mi stupisce.' },
+            { speaker: 'cece', text: '...ma purtroppo Bubi porta a casa zero euro' },
+            { speaker: 'bubi', text: 'Non mi stupisce' },
           ];
 
     // Due fili tenuti SEPARATI per non accavallarli:

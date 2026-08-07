@@ -217,6 +217,15 @@ export class PipScene extends Phaser.Scene {
         TransitionSystem.fadeToScene(this, 'CeceScene', { phase: 'after-pip' }, 600);
       });
 
+    // Scorciatoia debug: W → salta alla FINE del minigioco (schermata di vittoria)
+    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W)
+      .on('down', () => {
+        if (this.finished) return;
+        this.started = true;
+        this.score = GOAL;
+        this.win();
+      });
+
     TransitionSystem.fadeFromBlack(this, 800);
     this.showIntro();
   }
@@ -264,7 +273,7 @@ export class PipScene extends Phaser.Scene {
       { y: -34, txt: 'Umberto ha una necessità', col: '#ffffff', sz: '6px' },
       { y: -24, txt: 'URGENTISSIMA!',            col: '#ff6666', sz: '6px' },
       { y:  -6, txt: 'Punta il mirino e premi', col: '#ffffff', sz: '6px' },
-      { y:   4, txt: 'per sparare la pipì.',      col: '#ffdd44', sz: '6px' },
+      { y:   4, txt: 'per sparare la pipì',      col: '#ffdd44', sz: '6px' },
       { y:  22, txt: `Riempi la barra: ${GOAL} centri!`, col: '#66ff99', sz: '6px' },
     ];
     for (const r of rows) {
@@ -744,18 +753,38 @@ export class PipScene extends Phaser.Scene {
     els.push(this.add.text(tx, cy - 8, 'PISCIATA EFFETTUATA!', {
       fontFamily: FONT, fontSize: '7px', color: '#66ff99', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0, 0.5).setDepth(101));
-    els.push(this.add.text(tx, cy + 6, 'Umberto si sente un altro.', {
+    els.push(this.add.text(tx, cy + 6, 'Umberto si sente un altro', {
       fontFamily: FONT, fontSize: '6px', color: '#ffffff', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0, 0.5).setDepth(101));
     els.push(this.add.text(tx, cy + 18, `Centri: ${this.score}`, {
       fontFamily: FONT, fontSize: '6px', color: '#ffdd44', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0, 0.5).setDepth(101));
 
+    // Prompt: si prosegue SOLO con il click (nessun avanzamento automatico)
+    const prompt = this.add.text(cx, y0 + PH - 11, '– premi per continuare –', {
+      fontFamily: FONT, fontSize: '6px', color: '#cfe8d4', stroke: '#000000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(102).setAlpha(0);
+    els.push(prompt);
+
     els.forEach(o => (o as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(0));
     this.tweens.add({ targets: els, alpha: 1, duration: 500, delay: 200 });
-    this.time.delayedCall(2800, () =>
-      TransitionSystem.fadeToScene(this, 'CeceScene', { phase: 'after-pip' }, 1000)
-    );
+    const blink = this.tweens.add({
+      targets: prompt, alpha: 0.3, duration: 550, yoyo: true, repeat: -1, delay: 1100,
+    });
+
+    // Listener attivato dopo il fade-in (evita che l'ultimo sparo faccia avanzare)
+    this.time.delayedCall(700, () => {
+      const spK = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      const enK = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+      const go = (): void => {
+        this.input.off('pointerdown', go);
+        spK.off('down', go); enK.off('down', go);
+        blink.remove();
+        TransitionSystem.fadeToScene(this, 'CeceScene', { phase: 'after-pip' }, 1000);
+      };
+      this.input.on('pointerdown', go);
+      spK.on('down', go); enK.on('down', go);
+    });
   }
 
   // ── SFONDO DUCK HUNT (NES-accurate + muretto) ────────────────────────────

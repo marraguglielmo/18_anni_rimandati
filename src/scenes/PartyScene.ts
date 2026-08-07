@@ -237,51 +237,51 @@ const ILARIA_LINES: DialogueLine[] = [
   { speaker: 'ilaria', text: 'Daje, ci sono Guglielmo e Daniele che ti stanno aspettando' },
   { speaker: 'bubi', text: '*soffoca una risata*' },
   { speaker: 'bubi', text: 'Voiu propriu visciu ci cummini cujune' },
-  { speaker: 'umberto', text: '...Mo te fazzu vidire. Trande, con me.' },
+  { speaker: 'umberto', text: '...Mo te fazzu vidire. Trande, con me' },
 ];
 
 const CHALLENGE_LINES: DialogueLine[] = [
   { speaker: 'guglielmo', text: 'Ma varda ci è rivatu' },
   { speaker: 'aniceto', text: 'Vabe easy' },
-  { speaker: 'aniceto', text: 'Umberto con quelle mani sudate la palla vola via.' },
-  { speaker: 'trande', text: 'Ma io ragazzi non posso bere, sto sotto antibiotici per la vertebra.' },
+  { speaker: 'aniceto', text: 'Umberto con quelle mani sudate la palla vola via' },
+  { speaker: 'trande', text: 'Ma io ragazzi non posso bere, sto sotto antibiotici per la vertebra' },
   { speaker: 'umberto', text: 'Vabe bevo tutto io tranquillo...' },
-  { speaker: 'umberto', text: 'Guglielmo, Aniceto: preparatevi a perdere.' },
+  { speaker: 'umberto', text: 'Guglielmo, Aniceto: preparatevi a perdere' },
   { speaker: 'bubi', text: 'Ma se nu bali nu cazzu...' },
 ];
 
 const UMBERTO_DANCE_LINES: DialogueLine[] = [
-  { speaker: 'umberto', text: 'Bubi... ho voglia di ballare.' },
-  { speaker: 'bubi', text: 'Ballare? TU? Porco dio va ccidite.' },
-  { speaker: 'umberto', text: 'No aspetta, guarda — sono capace, giuro.' },
-  { speaker: 'bubi', text: 'Ok. Vai. Ti guardo. Vediamo che cazzo combini.' },
+  { speaker: 'umberto', text: 'Bubi... ho voglia di ballare' },
+  { speaker: 'bubi', text: 'Ballare? TU? Porco dio va ccidite' },
+  { speaker: 'umberto', text: 'No aspetta, guarda — sono capace, giuro' },
+  { speaker: 'bubi', text: 'Ok. Vai. Ti guardo. Vediamo che cazzo combini' },
 ];
 
 // Umberto & Cece sulla schermata Just Dance, un attimo prima che parta la musica
 const DANCE_PREGAME_LINES: DialogueLine[] = [
-  { speaker: 'cece', text: 'Umberto. Sei sicuro? Questa roba finisce nel video del 18esimo.' },
-  { speaker: 'umberto', text: 'Cece, metti la canzone. Stasera spacco la pista.' },
-  { speaker: 'cece', text: 'Va bene... ma poi non dire che non ti avevo avvisato.' },
-  { speaker: 'umberto', text: 'Zitto e parti col pezzo. Guardami.' },
+  { speaker: 'cece', text: 'Umberto. Sei sicuro? Questa roba finisce nel video del 18esimo' },
+  { speaker: 'umberto', text: 'Cece, metti la canzone. Stasera spacco la pista' },
+  { speaker: 'cece', text: 'Va bene... ma poi non dire che non ti avevo avvisato' },
+  { speaker: 'umberto', text: 'Zitto e parti col pezzo. Guardami' },
 ];
 
 
 const RETURN_FROM_PONG_LINES: DialogueLine[] = [
   { speaker: 'umberto', text: '...ok. Abbiamo perso. Ma sto benissimo. *hic*' },
-  { speaker: 'bubi', text: 'Umberto. Hai bevuto un litro di birra in venti minuti.' },
-  { speaker: 'umberto', text: 'Esatto. E sono ancora in piedi. Sono un atleta.' },
+  { speaker: 'bubi', text: 'Umberto. Hai bevuto un litro di birra in venti minuti' },
+  { speaker: 'umberto', text: 'Esatto. E sono ancora in piedi. Sono un atleta' },
   { speaker: 'bubi', text: 'Stefano che cazzo fa alla consolle?' },
   { speaker: 'umberto', text: '...sta minte la musica' },
   { speaker: 'bubi', text: 'E chira musica la chiami??' },
   { speaker: 'stefano', text: 'Oh babbi... come cazzo funziona sta merda??' },
-  { speaker: 'bubi', text: 'Vidimu se la faci cu te movi... a pista sta ddai.' },
-  { speaker: 'umberto', text: 'Io? Ballare? Bubi, io BALLO BENISSIMO.' },
-  { speaker: 'bubi', text: 'Sciamu pampasciune.' },
+  { speaker: 'bubi', text: 'Vidimu se la faci cu te movi... a pista sta ddai' },
+  { speaker: 'umberto', text: 'Io? Ballare? Bubi, io BALLO BENISSIMO' },
+  { speaker: 'bubi', text: 'Sciamu pampasciune' },
 ];
 
 // Umberto crolla dopo 1:30 di danza
 const DANCE_TIRED_LINES: DialogueLine[] = [
-  { speaker: 'umberto', text: 'Raga... mi fermo. Non ce la faccio.' },
+  { speaker: 'umberto', text: 'Raga... mi fermo. Non ce la faccio' },
   { speaker: 'bubi',    text: 'Menomale mi veniva da sboccare solo a guardarti...' },
 ];
 
@@ -289,8 +289,8 @@ const CECE_ARRIVES_LINES: DialogueLine[] = [
   { speaker: 'cece', text: 'RAGAZZI! Finalmente ci siamo!!' },
   { speaker: 'cece', text: 'Tutto pronto...' },
   { speaker: 'umberto', text: 'In che senso??' },
-  { speaker: 'cece', text: 'Non fate domande. Venite con me.' },
-  { speaker: 'bubi', text: 'Vadimu ci face moi.' },
+  { speaker: 'cece', text: 'Non fate domande. Venite con me' },
+  { speaker: 'bubi', text: 'Vadimu ci face moi' },
   { speaker: 'bubi', text: 'Sciamu...' },
 ];
 
@@ -1680,7 +1680,12 @@ export class PartyScene extends Phaser.Scene {
     // Score e combo
     let score = 0;
     let combo = 0;
+    let maxCombo = 0;
     let nPerfect = 0, nGood = 0, nOk = 0, nMiss = 0;
+
+    // Fine ballo legata alla barra: si risolve quando la barra tocca il 100%
+    let danceTimeUp = false;
+    let danceEndResolve: (() => void) | null = null;
 
     const scoreText = el(this.add.text(W - 8 + OX, 9 + OY, 'SCORE: 0', {
       fontFamily: FONT, fontSize: '7px', color: '#ffffff',
@@ -1705,6 +1710,8 @@ export class PartyScene extends Phaser.Scene {
       pbarFill.clear();
       pbarFill.fillStyle(0xcc44ff, 1);
       pbarFill.fillRect(PBAR_X, PBAR_Y, Math.round(PBAR_W * pct), 4);
+      // Barra piena → interrompi il ballo (non deve andare oltre)
+      if (pct >= 1 && !danceTimeUp) { danceTimeUp = true; danceEndResolve?.(); }
     };
 
     // Feedback testo (PERFECT / GOOD / OK / MISS)
@@ -1748,14 +1755,51 @@ export class PartyScene extends Phaser.Scene {
       return g;
     };
 
-    // ── Spotlight (cono luce dietro il ballerino) ─────────────────────────
-    const dSpot = dg(0, -8);
-    dSpot.fillStyle(0xffffff, 0.05);
-    dSpot.fillTriangle(-30, 58, 30, 58, 0, -54);
+    // ── Spotlight: luce CALDA che cade dall'alto sul ballerino ───────────────
+    // Elementi in spazio schermo (non nel container, così scendono dal bordo
+    // alto). Depth < 2005 → dietro al ballerino. Tutti in els → svaniscono a fine.
+    const spotX  = dbX;
+    const topY   = OY + 6;        // sorgente vicino al bordo superiore
+    const floorY = dbY + 30;      // dove la luce tocca il pavimento
+    const WARM   = 0xfff2cc;
 
-    // ── Ombra a terra ─────────────────────────────────────────────────────
+    // Accenti disco laterali (magenta/ciano): richiamo alla festa, molto tenui
+    const acc = el(this.add.graphics().setScrollFactor(0).setDepth(2002));
+    acc.fillStyle(0xff44cc, 0.05);
+    acc.fillTriangle(spotX - 30, topY, spotX - 40, floorY, spotX + 14, floorY);
+    acc.fillStyle(0x44ddff, 0.05);
+    acc.fillTriangle(spotX + 30, topY, spotX + 40, floorY, spotX - 14, floorY);
+
+    // Cono di luce a strati (dal faretto in alto si allarga verso terra)
+    const cone = el(this.add.graphics().setScrollFactor(0).setDepth(2003));
+    const coneLayer = (halfW: number, alpha: number): void => {
+      cone.fillStyle(WARM, alpha);
+      cone.fillTriangle(spotX, topY, spotX - halfW, floorY, spotX + halfW, floorY);
+    };
+    coneLayer(56, 0.045);
+    coneLayer(38, 0.06);
+    coneLayer(22, 0.085);
+
+    // Pozza di luce sul pavimento
+    const pool = el(this.add.graphics().setScrollFactor(0).setDepth(2003));
+    pool.fillStyle(WARM, 0.14);     pool.fillEllipse(spotX, floorY, 84, 16);
+    pool.fillStyle(WARM, 0.20);     pool.fillEllipse(spotX, floorY, 50, 11);
+    pool.fillStyle(0xffffff, 0.12); pool.fillEllipse(spotX, floorY, 26, 6);
+
+    // Faretto sorgente in alto
+    const src = el(this.add.graphics().setScrollFactor(0).setDepth(2004));
+    src.fillStyle(WARM, 0.22);   src.fillCircle(spotX, topY, 11);
+    src.fillStyle(0xffffff, 0.9); src.fillCircle(spotX, topY, 3.5);
+
+    // Pulsazione lenta della luce (viva ma discreta) — resta tra gli els
+    const spotPulse = this.tweens.add({
+      targets: [cone, pool], alpha: { from: 0.82, to: 1 },
+      duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    // ── Ombra a terra (dentro la pozza di luce) ──────────────────────────────
     const dShadow = dg(0, 16);
-    dShadow.fillStyle(0x000000, 0.30);
+    dShadow.fillStyle(0x000000, 0.34);
     dShadow.fillEllipse(0, 0, 30, 5);
 
     // ── Colori Umberto ────────────────────────────────────────────────────
@@ -2018,6 +2062,7 @@ export class PartyScene extends Phaser.Scene {
         combo = 0; nMiss++;
       }
 
+      if (combo > maxCombo) maxCombo = combo;
       scoreText.setText(`SCORE: ${score}`);
       comboText.setText(combo >= 3 ? `${combo}× COMBO!` : '');
       danceMove(dir);
@@ -2039,8 +2084,14 @@ export class PartyScene extends Phaser.Scene {
     const danceEscKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
     danceEscKey.once('down', () => { danceEscaped = true; danceEscResolve?.(); });
 
-    // ── Attendi la fine della canzone (o ESC) ────────────────────────────────
-    await Promise.race([this.delay(DANCE_DURATION_MS), danceEscPromise]);
+    // ── Attendi la BARRA piena (o ESC) ───────────────────────────────────────
+    // Il ballo finisce esattamente quando la barra tocca la fine (non oltre).
+    const danceEndPromise = new Promise<void>(r => { danceEndResolve = r; });
+    await Promise.race([
+      danceEndPromise,
+      this.delay(DANCE_DURATION_MS + 600), // salvagente se l'update si ferma
+      danceEscPromise,
+    ]);
 
     // Blocca input: rimuovi listener frecce e tasto ESC, stop nuovi spawn
     this.input.keyboard!.removeKey(danceEscKey);
@@ -2055,6 +2106,7 @@ export class PartyScene extends Phaser.Scene {
     // ── ESC: cleanup immediato ───────────────────────────────────────────────
     if (danceEscaped) {
       this.danceMgActive = false;
+      spotPulse.remove();
       for (const e of els) { if ((e as Phaser.GameObjects.GameObject).active) e.destroy(); }
       for (const a of liveArrows) { if (a.gfx.active) a.gfx.destroy(); }
       // La canzone continua anche dopo ESC (stessa logica della fine normale)
@@ -2062,19 +2114,96 @@ export class PartyScene extends Phaser.Scene {
       return;
     }
 
-    // ── Fine normale: Umberto crolla ─────────────────────────────────────────
-    // Prima dissolvi l'overlay (così il dialogo appare sopra a tutto)
-    this.danceMgActive = false;
+    // ── Fine normale: la barra è piena, il ballo si ferma qui ────────────────
+    this.danceMgActive = false; // frecce congelate: niente prosegue oltre la barra
+    spotPulse.remove();         // stop pulsazione luce (evita conflitti col fade)
+
+    // ── Pannello PUNTEGGIO (si prosegue SOLO col click) ──────────────────────
+    const scoreEls: Phaser.GameObjects.GameObject[] = [];
+    // Centro SCHERMO: GAME_WIDTH/2 (non WORLD_W, che sposterebbe il box a destra)
+    const scx = GAME_WIDTH / 2 + OX;
+    const scy = H / 2 + OY;
+    const PW = 176, PH = 152;
+
+    // Velo scuro che copre il campo congelato
+    scoreEls.push(this.add.rectangle(OX, OY, W, H, 0x000000, 0.8)
+      .setOrigin(0).setScrollFactor(0).setDepth(2099));
+
+    // Riquadro centrato
+    const panel = this.add.graphics().setScrollFactor(0).setDepth(2100);
+    panel.fillStyle(0x140018, 0.94);
+    panel.fillRoundedRect(scx - PW / 2, scy - PH / 2, PW, PH, 6);
+    panel.lineStyle(2, 0xcc44ff, 1);
+    panel.strokeRoundedRect(scx - PW / 2, scy - PH / 2, PW, PH, 6);
+    scoreEls.push(panel);
+
+    // Testo centrato (titolo, punteggio)
+    const addC = (dy: number, txt: string, size: string, color: string): void => {
+      scoreEls.push(this.add.text(scx, scy + dy, txt, {
+        fontFamily: FONT, fontSize: size, color, align: 'center',
+        stroke: '#000', strokeThickness: 3,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(2101));
+    };
+    addC(-63, '★  JUST DANCE!  ★', '9px', '#ff88ff');
+    addC(-44, `${score}`, '15px', '#ffffff');
+    addC(-30, 'PUNTI', '5px', '#9a88b0');
+
+    // Statistiche INCOLONNATE: etichetta a sinistra, valore allineato a destra
+    const rows: [string, number, string][] = [
+      ['PERFECT',   nPerfect, '#66ffcc'],
+      ['GOOD',      nGood,    '#9be08a'],
+      ['OK',        nOk,      '#ffffff'],
+      ['MISS',      nMiss,    '#ff7b7b'],
+      ['COMBO MAX', maxCombo, '#ffdd44'],
+    ];
+    const LX = scx - 66, RX = scx + 66;
+    let ry = scy - 12;
+    for (const [label, val, col] of rows) {
+      scoreEls.push(this.add.text(LX, ry, label, {
+        fontFamily: FONT, fontSize: '6px', color: col, stroke: '#000', strokeThickness: 3,
+      }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(2101));
+      scoreEls.push(this.add.text(RX, ry, `${val}`, {
+        fontFamily: FONT, fontSize: '6px', color: col, stroke: '#000', strokeThickness: 3,
+      }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(2101));
+      ry += 13;
+    }
+
+    const prompt = this.add.text(scx, scy + PH / 2 - 12, '– premi per continuare –', {
+      fontFamily: FONT, fontSize: '6px', color: '#dddddd',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(2101);
+    scoreEls.push(prompt);
+    const blink = this.tweens.add({ targets: prompt, alpha: 0.25, duration: 500, yoyo: true, repeat: -1 });
+
+    // Comparsa del pannello
+    for (const o of scoreEls) (o as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(0);
+    await new Promise<void>(resolve =>
+      this.tweens.add({ targets: scoreEls, alpha: 1, duration: 300, onComplete: () => resolve() })
+    );
+
+    // Attendi il click (o Spazio/Invio) — nessun avanzamento automatico
+    await new Promise<void>(resolve => {
+      const spK = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+      const enK = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+      const finish = (): void => {
+        this.input.off('pointerdown', finish);
+        spK.off('down', finish); enK.off('down', finish);
+        resolve();
+      };
+      this.input.on('pointerdown', finish);
+      spK.on('down', finish); enK.on('down', finish);
+    });
+    blink.remove();
+
+    // Chiudi il minigioco: dissolvi tutto (campo + pannello)
     await new Promise<void>(resolve =>
       this.tweens.add({
-        targets: els,
-        alpha: 0,
-        duration: 800,
+        targets: [...els, ...scoreEls], alpha: 0, duration: 700,
         onComplete: () => resolve(),
       })
     );
     for (const e of els) { if ((e as Phaser.GameObjects.GameObject).active) e.destroy(); }
     for (const a of liveArrows) { if (a.gfx.active) a.gfx.destroy(); }
+    for (const o of scoreEls) { if ((o as Phaser.GameObjects.GameObject).active) o.destroy(); }
 
     // Ora il dialogo è in primo piano senza concorrenza di depth
     await new Promise<void>(resolve =>
@@ -2099,31 +2228,18 @@ export class PartyScene extends Phaser.Scene {
     const h = sz / 2;      // metà altezza
     const s = sz * 0.40;   // mezzo gambo
 
+    // Forma CANONICA: freccia verso l'alto. Le altre direzioni sono la STESSA
+    // forma ruotata → tutte e 4 le frecce sono identiche (niente asimmetrie).
     g.fillStyle(color, a);
     g.lineStyle(ghost ? 1 : 2, ghost ? color : 0xffffff, ghost ? 0.25 : 0.65);
+    g.fillTriangle(-h, h * 0.2, h, h * 0.2, 0, -h);
+    g.fillRect(-s, h * 0.2, s * 2, h * 0.85);
+    g.strokeTriangle(-h, h * 0.2, h, h * 0.2, 0, -h);
 
-    switch (dir) {
-      case 'up':
-        g.fillTriangle(-h, h * 0.2, h, h * 0.2, 0, -h);
-        g.fillRect(-s, h * 0.2, s * 2, h * 0.85);
-        g.strokeTriangle(-h, h * 0.2, h, h * 0.2, 0, -h);
-        break;
-      case 'down':
-        g.fillTriangle(-h, -h * 0.2, h, -h * 0.2, 0, h);
-        g.fillRect(-s, -h * 1.05, s * 2, h * 0.85);
-        g.strokeTriangle(-h, -h * 0.2, h, -h * 0.2, 0, h);
-        break;
-      case 'left':
-        g.fillTriangle(h * 0.2, -h, h * 0.2, h, -h, 0);
-        g.fillRect(h * 0.2, -s, h * 0.85, s * 2);
-        g.strokeTriangle(h * 0.2, -h, h * 0.2, h, -h, 0);
-        break;
-      case 'right':
-        g.fillTriangle(-h * 0.2, -h, -h * 0.2, h, h, 0);
-        g.fillRect(-h * 1.05, -s, h * 0.85, s * 2);
-        g.strokeTriangle(-h * 0.2, -h, -h * 0.2, h, h, 0);
-        break;
-    }
+    const ROT: Record<DanceDir, number> = {
+      up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2,
+    };
+    g.setRotation(ROT[dir]);
   }
 
   // ─── Util ──────────────────────────────────────────────────────────────────

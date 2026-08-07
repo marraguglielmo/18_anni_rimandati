@@ -250,6 +250,23 @@ export class AudioManager {
     }
   }
 
+  /**
+   * Sfuma la FGM corrente fino al silenzio e la ferma, SENZA ripristinare il BGM
+   * (a differenza di stopFgMusic). Utile per una "dissolvenza in uscita" pulita
+   * prima di far entrare un'altra traccia. onDone scatta a fade completato.
+   */
+  fadeOutFgMusic(durationMs = 1000, onDone?: () => void): void {
+    const old = this.fgMusic;
+    this.fgMusic    = null;
+    this.fgMusicKey = '';
+    if (!old) { onDone?.(); return; }
+    this.fadeTo(old, 0, durationMs, 'fg', () => {
+      (old as any).stop?.();
+      (old as any).destroy?.();
+      onDone?.();
+    });
+  }
+
   // ══════════════════════════════════════════════════════════════════════
   //  API legacy (compatibilità con scene non ancora migrate)
   // ══════════════════════════════════════════════════════════════════════

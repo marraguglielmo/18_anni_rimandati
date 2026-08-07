@@ -35,28 +35,28 @@ const GIANFRANCO_STUTTER = [
 const INTRO_LINES: DialogueLine[] = [
   {
     speaker: 'umberto',
-    text: 'Porca puttana vagnoni, ma vi rendete conto? Siamo gli unici senza il video del 18esimo.',
+    text: 'Porca puttana vagnoni, ma vi rendete conto? Siamo gli unici senza il video del 18esimo',
   },
   { speaker: 'trande', text: 'Per la Mamma Maria, maledetto covid...' },
-  { speaker: 'bubi', text: 'È un vuoto assurdo porco dio.' },
+  { speaker: 'bubi', text: 'È un vuoto assurdo porco dio' },
 ];
 
 const CECE_LINES: DialogueLine[] = [
   { speaker: 'cece', text: 'Ou cujuni... se volete questo video ve lo genero io con l\'AI!' },
   { speaker: 'umberto', text: 'Cece?! Che cazzo dici?' },
-  { speaker: 'cece', text: 'Voi mi sottovalutate. Ora vi faccio vedere io negri.' },
+  { speaker: 'cece', text: 'Voi mi sottovalutate. Ora vi faccio vedere io negri' },
 ];
 
 const NPC_DIALOGUES: Record<string, DialogueLine[]> = {
   umberto: [
-    { speaker: 'umberto', text: 'Tutti hanno il loro video del 18esimo. Tutti tranne noi. Non se ne può più.' },
+    { speaker: 'umberto', text: 'Tutti hanno il loro video del 18esimo. Tutti tranne noi. Non se ne può più' },
     { speaker: 'bubi',    text: 'Eppure ci eravamo pure organizzati...' },
-    { speaker: 'umberto', text: 'Eh, poi è arrivato quel maledetto covid e ha mandato tutto a fanculo.' },
+    { speaker: 'umberto', text: 'Eh, poi è arrivato quel maledetto covid e ha mandato tutto a fanculo' },
   ],
   trande: [
-    { speaker: 'trande', text: 'Mamma Maria... ogni volta che ci penso mi sale il nervoso.' },
-    { speaker: 'bubi',   text: 'Almeno tu non ci pensi spesso.' },
-    { speaker: 'trande', text: 'Certo che no. Ma ogni volta che vedo un video degli altri, minchia.' },
+    { speaker: 'trande', text: 'Mamma Maria... ogni volta che ci penso mi sale il nervoso' },
+    { speaker: 'bubi',   text: 'Almeno tu non ci pensi spesso' },
+    { speaker: 'trande', text: 'Certo che no. Ma ogni volta che vedo un video degli altri, minchia' },
   ],
   gnumma: [
     { speaker: 'gnumma', text: '...' },

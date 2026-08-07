@@ -25,7 +25,11 @@ export class EndScene extends Phaser.Scene {
     // Sfondo bianco generoso: W×4 / H×4 copre qualsiasi offset camera
     this.add.rectangle(W / 2, H / 2, W * 4, H * 4, 0xffffff).setDepth(0);
 
-    AudioManager.get().playMusic(this, 'melancholy', 0.7);
+    // La canzone della scena in casa (finale) sfuma con una dissolvenza
+    // all'inizio dei titoli; poi entra melancholy per i credits.
+    AudioManager.get().fadeOutFgMusic(1600, () =>
+      AudioManager.get().playMusic(this, 'melancholy', 0.7)
+    );
 
     void this.rollCredits();
   }
@@ -104,7 +108,7 @@ export class EndScene extends Phaser.Scene {
 
     // ── Titolo principale ─────────────────────────────────────────────
     const title = this.add
-      .text(W / 2, H / 2 - 30, 'I 18 ANNI RIMANDATI', {
+      .text(W / 2, H / 2, 'I 18 ANNI RIMANDATI', {
         fontFamily: FONT, fontSize: '13px', color: '#111111',
       })
       .setOrigin(0.5).setAlpha(0).setDepth(10);
@@ -193,11 +197,11 @@ export class EndScene extends Phaser.Scene {
       .setOrigin(0.5).setAlpha(0).setDepth(10);
 
     await this.fadeIn(finale, T.finaleFadeIn);
-    await this.waitForClick();
+    await this.waitForClick(); // il gioco finisce qui: si prosegue solo col click
 
-    // Ferma la FGM (melancholy); poi la scena post-credits (piazza 2026)
+    // Ferma la FGM (melancholy); poi si torna alla schermata iniziale
     AudioManager.get().stopFgMusic(this, T.outroFade);
-    TransitionSystem.fadeToScene(this, 'PostCreditsScene', undefined, T.outroFade);
+    TransitionSystem.fadeToScene(this, 'BootScene', undefined, T.outroFade);
   }
 
   // ─── Blocco con righe in cascata + click per avanzare ────────────────────────
@@ -251,7 +255,10 @@ export class EndScene extends Phaser.Scene {
       const scattered = scatterAfter !== undefined && i >= scatterAfter;
 
       const t = this.add
-        .text(0, 0, lines[i], { fontFamily: FONT, fontSize: '5px', color: lineColor })
+        .text(0, 0, lines[i], {
+          fontFamily: FONT, fontSize: '5px', color: lineColor,
+          align: 'center', lineSpacing: 4, // righe multiple centrate e distanziate
+        })
         .setOrigin(0.5).setAlpha(0).setDepth(10);
 
       if (scattered) {
@@ -267,7 +274,9 @@ export class EndScene extends Phaser.Scene {
           x1: W / 2 - t.width / 2 - 4, y1: startY - 7,
           x2: W / 2 + t.width / 2 + 4, y2: startY + 7,
         });
-        startY += 11;
+        // Righe su più righe (con \n) occupano più spazio verticale
+        const rows = (lines[i].match(/\n/g)?.length ?? 0) + 1;
+        startY += rows > 1 ? t.height + 4 : 11;
       }
 
       objs.push(t);

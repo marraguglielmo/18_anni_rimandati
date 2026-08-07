@@ -7,7 +7,7 @@ import {
   loadPortraits,
 } from '../systems/CharacterSprite';
 import { DialogueSystem } from '../systems/DialogueSystem';
-import { TransitionSystem, UI_OFF_X, UI_OFF_Y } from '../systems/TransitionSystem';
+import { TransitionSystem } from '../systems/TransitionSystem';
 import { AudioManager } from '../systems/AudioManager';
 
 export interface BattleData {
@@ -146,21 +146,7 @@ export class BattleScene extends Phaser.Scene {
     if (kb) {
       kb.addKey(Phaser.Input.Keyboard.KeyCodes.ONE).on('down', () => this.selectMove(0));
       kb.addKey(Phaser.Input.Keyboard.KeyCodes.TWO).on('down', () => this.selectMove(1));
-
-      // ── Debug: ESC salta la battaglia ──
-      kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).once('down', () => this.skipBattle());
     }
-
-    // Label debug "[ESC] SALTA"
-    const FONT = '"Press Start 2P", monospace';
-    this.add
-      .text(UI_OFF_X + 4, UI_OFF_Y + GAME_HEIGHT - 4, '[ESC] SALTA', {
-        fontFamily: FONT, fontSize: '6px',
-        color: '#66ff99', stroke: '#000000', strokeThickness: 2,
-      })
-      .setOrigin(0, 1)
-      .setScrollFactor(0)
-      .setDepth(5000);
 
     void this.runIntro();
   }
@@ -280,16 +266,6 @@ export class BattleScene extends Phaser.Scene {
     this.moveResolve = null;
     this.moveUI.setVisible(false);
     resolve(PLAYER_MOVES[index]);
-  }
-
-  private skipBattle(): void {
-    if (this.battleDone) return;
-    this.battleDone = true;
-    this.cameras.main.fadeOut(400, 0, 0, 0);
-    this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      AudioManager.get().stopFgMusic(this);
-      this.battleData.onComplete();
-    });
   }
 
   private async finale(): Promise<void> {

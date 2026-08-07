@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, RENDER_SCALE } from '../config';
-import { TransitionSystem } from '../systems/TransitionSystem';
 import {
   addShadow,
   CHAR_CONFIGS,
@@ -221,46 +220,6 @@ export class BootScene extends Phaser.Scene {
         },
       });
     });
-
-    // ── TEMP DEBUG: salti rapidi alle scene (F1–F9, in ordine di gioco) ──
-    const debugJumps: [string, string, number, Record<string, unknown>?][] = [
-      ['[F1] PIAZ',  'PiazzaScene', Phaser.Input.Keyboard.KeyCodes.F1],
-      ['[F2] STR',   'StradaScene', Phaser.Input.Keyboard.KeyCodes.F2],
-      ['[F3] AULA',  'AulaScene',   Phaser.Input.Keyboard.KeyCodes.F3],
-      ['[F4] BICI',  'BiciScene',   Phaser.Input.Keyboard.KeyCodes.F4],
-      ['[F5] FEST',  'PartyScene',  Phaser.Input.Keyboard.KeyCodes.F5],
-      ['[F6] END',   'PartyScene',  Phaser.Input.Keyboard.KeyCodes.F6, { skipToEnd: true }],
-      ['[F7] CECE',  'CeceScene',   Phaser.Input.Keyboard.KeyCodes.F7, { skipToCamera: true }],
-      ['[F8] DANCE', 'PartyScene',  Phaser.Input.Keyboard.KeyCodes.F8, { skipToDance: true }],
-      ['[F9] POSTPIP','CeceScene',  Phaser.Input.Keyboard.KeyCodes.F9, { phase: 'after-pip' }],
-    ];
-    debugJumps.forEach(([label, sceneKey, keyCode, data], i) => {
-      const jump = (): void => {
-        this.started = true;
-        AudioManager.get().playBgMusic(this, 'bgm', 0.3);
-        TransitionSystem.fadeToScene(this, sceneKey, data);
-      };
-      const btn = this.add
-        .text(4 + i * 66, GAME_HEIGHT - 4, label, {
-          fontFamily: FONT,
-          fontSize: '6px',
-          color: '#66ff99',
-          stroke: '#000000',
-          strokeThickness: 2,
-        })
-        .setOrigin(0, 1)
-        .setDepth(5000)
-        .setInteractive({ useHandCursor: true });
-      btn.on(
-        'pointerdown',
-        (_p: Phaser.Input.Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => {
-          e.stopPropagation();
-          jump();
-        }
-      );
-      this.input.keyboard?.addKey(keyCode).once('down', jump);
-    });
-    // ─────────────────────────────────────────────────────────────────────
 
     // Primo click/tasto → musica + personaggi entrano
     const begin = (): void => this.triggerEntrance();

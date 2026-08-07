@@ -207,25 +207,6 @@ export class PipScene extends Phaser.Scene {
       this.shoot();
     });
 
-    // ESC per saltare il minigioco
-    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
-      .on('down', () => {
-        if (this.finished) return;
-        this.finished = true;
-        this.input.setDefaultCursor('default');
-        this.cameras.main.setRotation(0);
-        TransitionSystem.fadeToScene(this, 'CeceScene', { phase: 'after-pip' }, 600);
-      });
-
-    // Scorciatoia debug: W → salta alla FINE del minigioco (schermata di vittoria)
-    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W)
-      .on('down', () => {
-        if (this.finished) return;
-        this.started = true;
-        this.score = GOAL;
-        this.win();
-      });
-
     TransitionSystem.fadeFromBlack(this, 800);
     this.showIntro();
   }

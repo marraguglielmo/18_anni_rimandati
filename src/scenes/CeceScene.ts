@@ -178,10 +178,7 @@ export class CeceScene extends Phaser.Scene {
   private async run(): Promise<void> {
     const initData = (this.scene.settings.data ?? {}) as Record<string, unknown>;
 
-    if (initData.skipToCamera) {
-      await this.skipToFinalScene();
-      await this.cameraFlashExit();
-    } else if (initData.phase === 'after-pip') {
+    if (initData.phase === 'after-pip') {
       // CeceScene ripartita dopo il minigioco pipì
       await this.outsideBuilding_postPip();
       await this.delay(200);
@@ -194,35 +191,6 @@ export class CeceScene extends Phaser.Scene {
       await this.delay(200);
       await this.outsideBuilding_prePip(); // → transiziona a PipScene, non ritorna mai
     }
-  }
-
-  /** Scorciatoia debug: salta tutto e va direttamente al momento Cece → utente. */
-  private async skipToFinalScene(): Promise<void> {
-    this.drawInteriorTopDown();
-    this.drawGiantCake(W / 2, 110);
-    this.drawStaticBanners();
-
-    // Amici in semicerchio (piazzati istantaneamente)
-    const backRow: [string, number, number][] = [
-      ['ext0', 80, 58], ['guglielmo', 120, 52], ['aniceto', 165, 50],
-      ['ext1', 210, 54], ['ext2', 255, 52], ['ext3', 300, 58],
-    ];
-    for (const [id, x, y] of backRow) {
-      this.add.sprite(x, y, `char-${id}`, 1).setScale(CHAR_SCALE * 0.75).setDepth(y)
-        .play(`${id}-idle-down`);
-    }
-    for (const [id, x, y] of [['umberto', W / 2 - 28, 185], ['bubi', W / 2, 185], ['trande', W / 2 + 28, 185]] as [string, number, number][]) {
-      this.add.sprite(x, y, `char-${id}`, 1).setScale(CHAR_SCALE).setDepth(y)
-        .play(`${id}-idle-down`);
-    }
-
-    // Cece già in posizione finale (davanti a tutto)
-    this.ceceSprite = this.add.sprite(W / 2, 145, 'char-cece', 1)
-      .setScale(CHAR_SCALE * 0.88).setDepth(200);
-    this.ceceSprite.play('cece-idle-down');
-
-    await this.delay(700);
-    await this.ceceToCamera();
   }
 
   /**

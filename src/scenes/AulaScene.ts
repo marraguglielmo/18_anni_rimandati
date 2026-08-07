@@ -1128,15 +1128,9 @@ export class AulaScene extends Phaser.Scene {
    */
   private showMgQuestion(qData: MgQuestion, idx: number): Promise<number> {
     return new Promise((resolve) => {
-      // ESC — salta la domanda (resolve(-1) → for loop rompe il ciclo)
-      const escKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-      // done() garantisce che removeKey venga chiamato su OGNI percorso di uscita,
-      // non solo su ESC — così non si accumulano listener tra una domanda e l'altra.
       const done = (result: number): void => {
-        this.input.keyboard!.removeKey(escKey);
         resolve(result);
       };
-      escKey.once('down', () => done(-1));
       const D     = 510;
       const BTN_W = 163;
       const BTN_H = 31;

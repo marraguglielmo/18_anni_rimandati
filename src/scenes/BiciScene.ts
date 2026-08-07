@@ -287,10 +287,6 @@ export class BiciScene extends Phaser.Scene {
         key.on('down', jump);
         key.on('up', jumpCut);
       }
-      // ESC per saltare il minigioco monete
-      kb.addKey(Phaser.Input.Keyboard.KeyCodes.ESC).once('down', () => {
-        if (this.mgActive) this.winMinigame();
-      });
     }
     this.input.on('pointerdown', jump);
     this.input.on('pointerup', jumpCut);

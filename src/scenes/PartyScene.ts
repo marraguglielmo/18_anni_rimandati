@@ -477,46 +477,10 @@ export class PartyScene extends Phaser.Scene {
     // BGM globale già in corso
     this.questHUD = new QuestHUD(this, GAME_WIDTH / 2 + UI_OFF_X, 50 + UI_OFF_Y).addMarker();
 
-    const initData = this.scene.settings.data as { pongDone?: boolean; skipToDance?: boolean; skipToEnd?: boolean } | undefined;
-    const pongDone    = !!initData?.pongDone;
-    const skipToDance = !!initData?.skipToDance;
-    const skipToEnd   = !!initData?.skipToEnd;
+    const initData = this.scene.settings.data as { pongDone?: boolean } | undefined;
+    const pongDone = !!initData?.pongDone;
 
-    if (skipToEnd) {
-      // Debug shortcut F6: salta tutto, vai al finale del party (Cece arriva → CeceScene)
-      this.metIlaria = true;
-      this.pongReady = true;
-      this.pongStarted = true;
-      this.arrivalDone = true;
-      this.danceStarted = true;
-      this.danceUnlocked = true;
-      this.player.locked = true;
-      TransitionSystem.announceArea(this, 'CASA DI ILARIA – LUGLIO 2019');
-      this.time.delayedCall(600, () => {
-        this.activateBrokenMusic();
-        this.time.delayedCall(800, () => {
-          this.dialogue.start({
-            lines: CECE_ARRIVES_LINES,
-            onComplete: () => {
-              AudioManager.get().stopFgMusic(this, 1200);
-              TransitionSystem.fadeToScene(this, 'CeceScene', undefined, 1200);
-            },
-          });
-        });
-      });
-    } else if (skipToDance) {
-      // Debug shortcut F8: vai dritto al minigioco Just Dance
-      this.metIlaria = true;
-      this.pongReady = true;
-      this.pongStarted = true;
-      this.arrivalDone = true;
-      this.danceStarted = true;
-      this.danceUnlocked = true;
-      this.player.sprite.setPosition(240, 200);
-      this.player.locked = true;
-      TransitionSystem.announceArea(this, 'CASA DI ILARIA – LUGLIO 2019');
-      this.time.delayedCall(500, () => void this.playDanceMinigame());
-    } else if (pongDone) {
+    if (pongDone) {
       // Rientra dalla festa dopo il beer pong — salta arrival, vai dritto alla danza
       this.metIlaria = true;
       this.pongReady = true;
@@ -535,40 +499,6 @@ export class PartyScene extends Phaser.Scene {
       // Arrivo stordito dal salto, poi dialogo automatico
       this.time.delayedCall(900, () => void this.arrivalDaze());
     }
-
-    // ── DEBUG interni PartyScene (indipendenti dai tasti BootScene) ──
-    // ── P = salta beer pong → danza ubriaca + finale ──
-    this.input.keyboard!
-      .addKey(Phaser.Input.Keyboard.KeyCodes.F4)
-      .once('down', () => {
-        if (this.danceStarted) return;
-        this.metIlaria = true;
-        this.pongReady = true;
-        this.pongStarted = true;
-        this.arrivalDone = true;
-        this.danceStarted = true;   // impedisce il trigger automatico finché non siamo pronti
-        this.danceUnlocked = true;
-        this.player.sprite.setPosition(240, 200); // posizione vicina, non già sulla pista
-        this.player.locked = true;
-        this.time.removeAllEvents();
-        void this.postPongFlow();
-      });
-
-    // ── DEBUG: F5 = salta beer pong + danza → va direttamente a CeceScene ──
-    this.input.keyboard!
-      .addKey(Phaser.Input.Keyboard.KeyCodes.F5)
-      .once('down', () => {
-        if (this.danceStarted) return;
-        this.metIlaria = true;
-        this.pongReady = true;
-        this.pongStarted = true;
-        this.arrivalDone = true;
-        this.danceStarted = true;
-        this.danceUnlocked = true;
-        this.player.locked = true;
-        this.time.removeAllEvents();
-        TransitionSystem.fadeToScene(this, 'CeceScene', undefined, 1000);
-      });
   }
 
   private async arrivalDaze(): Promise<void> {
@@ -2077,24 +2007,15 @@ export class PartyScene extends Phaser.Scene {
     ck.up.on('down', onU);
     ck.right.on('down', onR);
 
-    // ── ESC per saltare la danza ─────────────────────────────────────────────
-    let danceEscaped = false;
-    let danceEscResolve: (() => void) | null = null;
-    const danceEscPromise = new Promise<void>(r => { danceEscResolve = r; });
-    const danceEscKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
-    danceEscKey.once('down', () => { danceEscaped = true; danceEscResolve?.(); });
-
-    // ── Attendi la BARRA piena (o ESC) ───────────────────────────────────────
+    // ── Attendi la BARRA piena ───────────────────────────────────────────────
     // Il ballo finisce esattamente quando la barra tocca la fine (non oltre).
     const danceEndPromise = new Promise<void>(r => { danceEndResolve = r; });
     await Promise.race([
       danceEndPromise,
       this.delay(DANCE_DURATION_MS + 600), // salvagente se l'update si ferma
-      danceEscPromise,
     ]);
 
-    // Blocca input: rimuovi listener frecce e tasto ESC, stop nuovi spawn
-    this.input.keyboard!.removeKey(danceEscKey);
+    // Blocca input: rimuovi listener frecce, stop nuovi spawn
     ck.left.off('down', onL);
     ck.down.off('down', onD);
     ck.up.off('down', onU);
@@ -2102,17 +2023,6 @@ export class PartyScene extends Phaser.Scene {
     spawnActive = false; // nessuna nuova freccia; quelle in volo continuano
     this.danceProgressCb = null;
     this.danceStartTime = 0;
-
-    // ── ESC: cleanup immediato ───────────────────────────────────────────────
-    if (danceEscaped) {
-      this.danceMgActive = false;
-      spotPulse.remove();
-      for (const e of els) { if ((e as Phaser.GameObjects.GameObject).active) e.destroy(); }
-      for (const a of liveArrows) { if (a.gfx.active) a.gfx.destroy(); }
-      // La canzone continua anche dopo ESC (stessa logica della fine normale)
-      if (unlockAfter) this.player.locked = false;
-      return;
-    }
 
     // ── Fine normale: la barra è piena, il ballo si ferma qui ────────────────
     this.danceMgActive = false; // frecce congelate: niente prosegue oltre la barra

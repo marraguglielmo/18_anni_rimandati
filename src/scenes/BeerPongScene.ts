@@ -108,13 +108,6 @@ export class BeerPongScene extends Phaser.Scene {
     this.dialogue = new DialogueSystem(this);
     TransitionSystem.announceArea(this, 'BEER PONG — 2 VS 2');
 
-    // ESC per saltare il minigioco
-    this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC)
-      .once('down', () => {
-        AudioManager.get().stopFgMusic(this);
-        TransitionSystem.fadeToScene(this, 'PartyScene', { pongDone: true }, 600);
-      });
-
     void this.run();
   }
 

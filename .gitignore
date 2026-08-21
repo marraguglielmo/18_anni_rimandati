@@ -1,2 +1,6 @@
 node_modules/
 dist/
+
+# progetto separato: ha un suo repo
+albo60/
+prototipo_fumetto/
